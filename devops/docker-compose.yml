@@ -1,40 +1,31 @@
-version: "3.9"
+version: '3.8'
 
 services:
-  flask-api:
+  app:
     build:
-      context: ../
-      dockerfile: ./devops/Dockerfile
+      context: ..
+      dockerfile: devops/Dockerfile
     ports:
       - "5000:5000"
-    env_file:
+    volumes:
+      - ../app:/app/app
+    env_file: 
       - .env
     depends_on:
       - postgres
-      - mongo
-    volumes:
-      - ../app:/app/app
+    command: >
+      sh -c "flask run --host=0.0.0.0"
 
   postgres:
-    image: postgres:14
-    restart: always
+    image: postgres:13
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=flaskdb
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
-  mongo:
-    image: mongo:5
-    restart: always
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongo_data:/data/db
-
 volumes:
   postgres_data:
-  mongo_data:
