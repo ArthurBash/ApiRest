@@ -1,31 +1,23 @@
-version: '3.8'
 
 services:
-  app:
+  ms-usuarios:
     build:
-      context: ..
-      dockerfile: devops/Dockerfile
+      context: ../ms-usuarios
+      dockerfile: Dockerfile  
     ports:
-      - "5000:5000"
-    volumes:
-      - ../app:/app/app
-    env_file: 
-      - .env
-    depends_on:
-      - postgres
-    command: >
-      sh -c "flask run --host=0.0.0.0"
-
-  postgres:
-    image: postgres:13
+      - "8000:80"
+    env_file:
+    - .env
     environment:
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=flaskdb
-    ports:
-      - "5432:5432"
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+      - JWT_SECRET=${SECRET_KEY}
+  
+  db-usuarios:
+    image: postgres:13
+    env_file:
+    - .env
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - pgdata-usuarios:/var/lib/postgresql/data
 
 volumes:
-  postgres_data:
+  pgdata-usuarios:
