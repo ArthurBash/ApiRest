@@ -8,6 +8,8 @@ services:
       - "8000:80"
     env_file:
     - .env
+    volumes:
+      - ../ms-usuarios/app:/code/app
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
       - JWT_SECRET=${SECRET_KEY}
