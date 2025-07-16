@@ -19,7 +19,7 @@ class UserController:
     def get_user(user_id):
         user = UserService.get_user_by_id(user_id)
         if not user:
-            return jsonify({'error': 'User not found'}), 404
+            return jsonify({'error': 'Usuario no encontrado'}), 404
         return jsonify(user.to_dict()), 200
 
     @staticmethod
@@ -35,4 +35,4 @@ class UserController:
         user, error, status_code = UserService.delete_user(user_id)
         if error:
             return jsonify({'error': error}), status_code
-        return jsonify({'message': 'User deleted'}), 200
+        return jsonify({'message': 'Usuario eliminado'}), 200
