@@ -13,13 +13,33 @@ services:
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
       - JWT_SECRET=${SECRET_KEY}
-  
+    depends_on:
+      db-usuarios:
+        condition: service_healthy
   db-usuarios:
     image: postgres:13
     env_file:
     - .env
     volumes:
       - pgdata-usuarios:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "admin", "-d", "mydb", "-p", "5432"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    
+
+  pgadmin4:
+    image: dpage/pgadmin4:9.5.0
+    ports:
+      - "5050:80"
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@admin.com
+      - PGADMIN_DEFAULT_PASSWORD=SuperSecret
+    volumes:
+    - pgadmin-data:/var/lib/pgadmin
+  
 
 volumes:
   pgdata-usuarios:
+  pgadmin-data:
