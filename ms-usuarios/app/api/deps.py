@@ -14,7 +14,6 @@ def get_db():
 
 
 def get_existing_user(user_id: str = Path(...), db: Session = Depends(get_db)):
-    print(f"el user_id es {user_id}")
     try:
         decoded_id = decode_id(user_id)
     except Exception:

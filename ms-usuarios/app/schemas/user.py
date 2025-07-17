@@ -35,4 +35,3 @@ class UserRead(UserBase):
     model_config = {
         "from_attributes": True
     }
-
