@@ -1,0 +1,16 @@
+# Ignorar carpetas __pycache__ y archivos .pyc
+__pycache__
+__pycache__/
+*.py[cod]
+*pytest*
+
+# Ignorar archivos de entorno virtual
+venv/
+.env
+
+# Ignorar archivos de logs
+*.log
+
+# Ignorar archivos temporales del sistema
+*.swp
+.DS_Store
