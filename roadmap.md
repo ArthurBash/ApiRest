@@ -6,7 +6,7 @@
 - [x] Hasheo de contraseñas (CryptContext)
 - [x] Hasheo de ID en las respuestas
 - [x] Dockerfile + Postgres + .env configurados
-- [x] Tests unitarios
+- [] Tests unitarios
 
 ---
 
@@ -43,13 +43,13 @@ ms-fotos/app/
 
 
 ### Checklist:
-- [ ] Definir modelo `Photo` (nombre, path, usuario_id, carpeta_id, fecha, id hasheado)
+- [x] Definir modelo `Photo` (nombre, path, usuario_id, folder_id, date, id hasheado)
 - [ ] Endpoints CRUD básico: subir, listar, eliminar fotos
-- [ ] Integración MinIO S3 para almacenamiento (presigned urls recomendadas)
+- [ ] Integración MinIO S3 para almacenamiento
 - [ ] Seguridad: JWT tokens en endpoints
 - [ ] Hasheo del ID en las respuestas
-- [ ] Tests unitarios (pytest)
 - [ ] Dockerfile + .env + Postgres funcionando
+- [ ] Tests unitarios (pytest)
 
 ---
 
@@ -77,7 +77,7 @@ ms-carpetas/app/
 
 
 ### Checklist:
-- [ ] Definir modelo `Folder` (nombre, permisos, usuario_id, tags, fecha, id hasheado)
+- [ ] Definir modelo `Folder` (nombre, permisos, usuario_id, tags, date, id hasheado)
 - [ ] CRUD de carpetas
 - [ ] Implementar permisos (público / privado)
 - [ ] Implementar tags (búsqueda simple por lista de strings)

@@ -30,14 +30,22 @@ root/
 
 ### 📥 Comando para levantar todo:
 ```bash
-docker-compose up --build
+docker compose up --build
+```
+### 📥 Comando para levantar solo microservicios con su db:
+```bash
+docker compose --profile ms-usuarios up --build
+
+docker compose --profile ms-fotos up --build
 ```
 
 🖥️ Servicios disponibles:
 Servicio	URL
-Frontend	http://localhost:5000
-API Usuarios	http://localhost:8000/docs  (Solo en funcionamiento)
-API Fotos	http://localhost:8002/docs
-API Carpetas	http://localhost:8003/docs
-MinIO	http://localhost:9001
+> -Frontend	http://localhost:5000
+> - API Usuarios	http://localhost:8000/docs  (Solo en funcionamiento)
+> - API Fotos	http://localhost:8002/docs
+> - API Carpetas	http://localhost:8003/docs
+> - MinIO	http://localhost:9001
+
+
 

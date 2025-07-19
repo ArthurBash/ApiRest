@@ -1,35 +1,80 @@
 
 services:
+  db-usuarios:
+    container_name: db-usuarios
+
+    profiles: ["ms-usuarios"]
+    image: postgres:13
+    env_file:
+    - ../ms-usuarios/.env
+    volumes:
+      - pgdata-usuarios:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "admin", "-d", "databaseUsuarios", "-p", "5432"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ms-net
+
+
   ms-usuarios:
+    container_name: ms-usuarios
+    profiles: ["ms-usuarios"]
     build:
       context: ../ms-usuarios
       dockerfile: Dockerfile  
     ports:
       - "8000:80"
     env_file:
-    - .env
+    - ../ms-usuarios/.env
     volumes:
       - ../ms-usuarios/app:/code/app
-    environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
-      - JWT_SECRET=${SECRET_KEY}
+    networks:
+      - ms-net
     depends_on:
       db-usuarios:
         condition: service_healthy
-  db-usuarios:
+
+
+  db-fotos:
+    container_name: db-fotos
+    profiles: ["ms-fotos"]
     image: postgres:13
     env_file:
-    - .env
+    - ../ms-fotos/.env
     volumes:
-      - pgdata-usuarios:/var/lib/postgresql/data
+      - pgdata-fotos:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "admin", "-d", "mydb", "-p", "5432"]
+      test: ["CMD", "pg_isready", "-U", "admin", "-d", "databaseFotos", "-p", "5432"]
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - ms-net
+
+  ms-fotos:
+    container_name: ms-fotos
+    profiles: ["ms-fotos"]
+    build:
+      context: ../ms-fotos
+      dockerfile: Dockerfile  
+    env_file:
+    - ../ms-fotos/.env
+    volumes:
+      - ../ms-fotos/app:/code/app
+    ports:
+      - "8001:80"
+    depends_on:
+      db-fotos:
+        condition: service_healthy
+    networks:
+      - ms-net
+        
     
 
   pgadmin4:
+    container_name: pgadmin
     image: dpage/pgadmin4:9.5.0
     ports:
       - "5050:80"
@@ -38,8 +83,16 @@ services:
       - PGADMIN_DEFAULT_PASSWORD=SuperSecret
     volumes:
     - pgadmin-data:/var/lib/pgadmin
+    networks:
+      - ms-net
   
 
 volumes:
   pgdata-usuarios:
+  pgdata-fotos:
   pgadmin-data:
+
+networks:
+  ms-net:
+    name: microservicio 
+    driver: bridge
