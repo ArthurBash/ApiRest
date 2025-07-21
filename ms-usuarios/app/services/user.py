@@ -72,7 +72,7 @@ def authenticate_user(db: Session, username: str, password: str):
         return None
     return user
 
-load_dotenv()  # Carga variables de .env
+load_dotenv() 
 
 HASHIDS_SALT = os.getenv("HASHIDS_SALT", "valor_por_defecto_no_conveniente")
 HASHIDS_MIN_LENGTH = int(os.getenv("HASHIDS_MIN_LENGTH", 8))
@@ -87,8 +87,6 @@ def decode_id(hashid: str) -> int:
     if decoded:
         return decoded[0]
     raise ValueError("ID inválido")
-
-from app.services.user import encode_id
 
 def user_to_id_hasheado(user) -> UserRead:
     return UserRead(

@@ -11,7 +11,7 @@ Frontend (Flask)
 │
 ├──> Microservicio Usuarios (FastAPI + PostgreSQL) [JWT / Hash Passwords]
 ├──> Microservicio Fotos (FastAPI + PostgreSQL + MinIO S3)
-└──> Microservicio Carpetas (FastAPI + PostgreSQL)
+└──> Microservicio Carpetas (FastAPI + MongoDB)
 
 
 ---

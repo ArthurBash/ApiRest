@@ -52,7 +52,6 @@ def api_get_user(
 
 
 
-
 @router.put("/{user_id}", response_model=UserRead)
 def api_update_user(
     user_id: str,
@@ -88,7 +87,6 @@ current_user: User = Depends(get_current_user)):
 
 @router.post("/token", response_model=Token)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(),db: Session = Depends(get_db)): 
-    print(form_data)   
     username = form_data.username
     password = form_data.password
     user = authenticate_user(username, password,db)
