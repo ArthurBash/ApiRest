@@ -1,8 +1,9 @@
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
-from starlette.status import HTTP_422_UNPROCESSABLE_ENTITY
+from starlette.status import HTTP_422_UNPROCESSABLE_ENTITY,HTTP_404_NOT_FOUND
 from fastapi import FastAPI
+from app.exceptions import ErrorDecodificacion,ErrorFotoNoEncontrada
 
 def register_exception_handlers(app: FastAPI):
 
@@ -22,3 +23,18 @@ def register_exception_handlers(app: FastAPI):
                 "errors": error_messages,
             },
         )
+
+        @app.exception_handler(ErrorDecodificacion)
+        async def error_decodificacion(request: Request, exc: ErrorDecodificacion):
+            return JSONResponse(
+                status_code=HTTP_404_NOT_FOUND,
+                content={"detail": "Error en la decodificacion"},
+            )
+        
+        @app.exception_handler(ErrorFotoNoEncontrada)
+        async def error_foto_no_encontrada(request: Request, exc: ErrorFotoNoEncontrada):
+            return JSONResponse(
+                status_code=HTTP_404_NOT_FOUND,
+                content={"detail": "Foto no encontrada"},
+            )
+

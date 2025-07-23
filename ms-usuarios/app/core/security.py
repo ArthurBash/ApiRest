@@ -47,6 +47,14 @@ def authenticate_user(username: str, password: str,db):
         return False
     if not verify_password(password, user.hashed_password):
         return False
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Usuario o contraseña Incorrecta",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+        
     return user
 
 

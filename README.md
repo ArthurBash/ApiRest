@@ -28,6 +28,20 @@ root/
 ├── ms-carpetas/ (FastAPI)
 └── minio/ (MinIO S3)
 
+
+ms-usuarios/
+    app/
+    ├── api/                 ← Routers (entrada de API)
+    │   └── v1/
+    ├── core/                ← Configuración, seguridad, utilidades
+    ├── db/                  ← Conexión, sesiones, base, migraciones
+    ├── handlers/            ← Manejo de errores centralizados
+    ├── models/              ← Modelos de SQLAlchemy
+    ├── schemas/             ← Esquemas Pydantic (entrada y salida)
+    ├── services/            ← Lógica de negocio
+    ├── main.py              ← Punto de entrada
+
+
 ### 📥 Comando para levantar todo:
 ```bash
 docker compose up --build

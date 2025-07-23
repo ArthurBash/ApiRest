@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from app.models.user import User as UserModel
-from app.schemas.user import UserCreate,UserRead
+from app.schemas.user import UserCreate,UserRead,UserUpdate,UserUpdatePUT
 from app.exceptions import UsernameAlreadyExists, EmailAlreadyExists
 
 from passlib.context import CryptContext
@@ -16,6 +16,10 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def get_user(db: Session, user_id: int):
     return db.query(UserModel).filter(UserModel.id == user_id).first()
+
+def get_users(db: Session):
+    users = db.query(User).offset(skip).limit(limit).all()
+    return users
 
 
 def get_user_by_username(db: Session, username: str):
@@ -40,7 +44,7 @@ def create_user(db: Session, user_in: UserCreate):
     return db_user
 
 
-def update_user(user_in,db,user_db):
+def update_user_patch(user_db, user_in: UserUpdate, db: Session):
     user_data = user_in.dict(exclude_unset=True)  # Solo campos enviados
 
     for field, value in user_data.items():
@@ -49,6 +53,17 @@ def update_user(user_in,db,user_db):
     db.add(user_db)
     db.commit()
     db.refresh(user_db)
+    return user_db
+
+def update_user_put(user_db, user_in: UserUpdatePUT, db: Session):
+    user_db.name = user_in.name
+    user_db.lastname = user_in.lastname
+    user_db.username = user_in.username
+    user_db.email = user_in.email
+    db.add(user_db)
+    db.commit()
+    db.refresh(user_db)
+    return user_db
 
 def delete_user(user_db,db):
     db.delete(user_db)
