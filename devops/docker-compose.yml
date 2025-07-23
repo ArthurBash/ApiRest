@@ -3,7 +3,7 @@ services:
   db-usuarios:
     container_name: db-usuarios
 
-    profiles: ["ms-usuarios"]
+    # profiles: ["ms-usuarios"]
     image: postgres:13
     env_file:
     - ../ms-usuarios/.env
@@ -20,7 +20,7 @@ services:
 
   ms-usuarios:
     container_name: ms-usuarios
-    profiles: ["ms-usuarios"]
+    # profiles: ["ms-usuarios"]
     build:
       context: ../ms-usuarios
       dockerfile: Dockerfile  
@@ -39,7 +39,7 @@ services:
 
   db-fotos:
     container_name: db-fotos
-    profiles: ["ms-fotos"]
+    # profiles: ["ms-fotos"]
     image: postgres:13
     env_file:
     - ../ms-fotos/.env
@@ -55,7 +55,7 @@ services:
 
   ms-fotos:
     container_name: ms-fotos
-    profiles: ["ms-fotos"]
+    # profiles: ["ms-fotos"]
     build:
       context: ../ms-fotos
       dockerfile: Dockerfile  
