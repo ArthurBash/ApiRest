@@ -43,7 +43,7 @@ def api_list_users(
     skip: int = 0, limit: int = 100, db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)):
 
-    users = get_users(db)
+    users = get_users(db,skip,limit)
     return [user_to_id_hasheado(u) for u in users]
 
 
@@ -87,13 +87,16 @@ current_user: User = Depends(get_current_user)):
     delete_user(user_db,db)
 
 
-@router.post("/token", response_model=Token)
+@router.post("/token/login", response_model=Token)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(),db: Session = Depends(get_db)): 
     username = form_data.username
     password = form_data.password
     user = authenticate_user(username, password,db)
-    access_token_expires = timedelta(minutes=30)
+    access_token_expires = timedelta(minutes=30)   #TODO sacar o dejar , ver services
     access_token = create_access_token(subject=user.username, expires_delta=access_token_expires)
     return {"access_token": access_token, "token_type": "bearer"}
 
 
+
+
+## TODO agregar Loguot

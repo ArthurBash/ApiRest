@@ -4,6 +4,7 @@ from typing import Optional
 
 from typing import Optional
 
+#TODO agregar descripcion en las APIs
 
 class UserUpdate(BaseModel):
     name: Optional[str] = Field(default=None)

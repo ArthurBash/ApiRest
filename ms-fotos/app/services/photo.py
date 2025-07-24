@@ -54,7 +54,15 @@ def create_photo(db: Session, photo_in: PhotoCreate):
 def update_photo_patch(photo_db:Photo, photo_in: PhotoUpdate, db: Session):
     
 
-    photo_data = photo_in.dict(exclude_unset=True)  
+    photo_data = photo_in.dict(exclude_unset=True)
+
+    if "folder_id" in photo_data:
+        photo_data["folder_id"] = decode_id(photo_data["folder_id"])
+
+    if "user_id" in photo_data:
+        photo_data["user_id"] = decode_id(photo_data["user_id"])
+
+    # Asignar los campos al modelo
     for field, value in photo_data.items():
         setattr(photo_db, field, value)
 
@@ -67,8 +75,8 @@ def update_photo_put(photo_db: Photo, photo_in: PhotoUpdatePUT, db: Session):
     
     photo_db.name = photo_in.name
     photo_db.path = photo_in.path
-    photo_db.user_id = photo_in.user_id
-    photo_db.folder_id = photo_in.folder_id
+    photo_db.user_id = decode_id(photo_in.user_id)
+    photo_db.folder_id = decode_id(photo_in.folder_id)
     photo_db.is_active = photo_in.is_active
 
     db.add(photo_db)
@@ -76,7 +84,7 @@ def update_photo_put(photo_db: Photo, photo_in: PhotoUpdatePUT, db: Session):
     db.refresh(photo_db)
     return photo_db
 
-def delete_photo(photo_db):
+def delete_photo(photo_db: Photo,db: Session):
     db.delete(photo_db)
     db.commit()
 

@@ -17,8 +17,8 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 def get_user(db: Session, user_id: int):
     return db.query(UserModel).filter(UserModel.id == user_id).first()
 
-def get_users(db: Session):
-    users = db.query(User).offset(skip).limit(limit).all()
+def get_users(db: Session,skip,limit):
+    users = db.query(UserModel).offset(skip).limit(limit).all()
     return users
 
 

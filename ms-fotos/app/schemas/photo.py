@@ -21,15 +21,15 @@ class PhotoCreate(PhotoBase):
 class PhotoUpdate(BaseModel):
     name: Optional[str] = Field(default=None)
     path: Optional[str] = Field(default=None)
-    user_id: Optional[int] = Field(default=None)
-    folder_id: Optional[int] = Field(default=None)
+    user_id: Optional[str] = Field(default=None)
+    folder_id: Optional[str] = Field(default=None)
     is_active: Optional[bool] = Field(default=None)
 
 class PhotoUpdatePUT(BaseModel):
     name: str
     path: str
-    user_id: int
-    folder_id: int
+    user_id: str
+    folder_id: str
     is_active: bool
 
 

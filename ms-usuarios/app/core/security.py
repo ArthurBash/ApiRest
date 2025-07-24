@@ -12,9 +12,10 @@ from app.models.user import User
 from app.services.user import get_user_by_username
 from app.api.deps import get_db
 from sqlalchemy.orm import Session
+from app.exceptions import UserOrPasswordError
 
 # Esquema de autenticación
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/users/token/login")
 
 # Contexto de hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -41,20 +42,13 @@ def decode_access_token(token: str) -> dict:
     except JWTError:
         return None
 
-def authenticate_user(username: str, password: str,db):
-    user = get_user_by_username(db,username)
-    if not user:
-        return False
-    if not verify_password(password, user.hashed_password):
-        return False
-
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Usuario o contraseña Incorrecta",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-        
+def authenticate_user(username: str, password: str, db):
+    user = get_user_by_username(db, username)
+    
+    if not user or not verify_password(password, user.hashed_password):
+        raise UserOrPasswordError()
+    
+    
     return user
 
 

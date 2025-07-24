@@ -6,3 +6,6 @@ class UsernameAlreadyExists(Exception):
 
 class EmailAlreadyExists(Exception):
    pass
+
+class UserOrPasswordError(Exception):
+   pass

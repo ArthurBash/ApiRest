@@ -1,8 +1,8 @@
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
-from app.exceptions import EmailAlreadyExists,UsernameAlreadyExists
-from starlette.status import HTTP_422_UNPROCESSABLE_ENTITY
+from app.exceptions import EmailAlreadyExists,UsernameAlreadyExists,UserOrPasswordError
+from starlette.status import HTTP_422_UNPROCESSABLE_ENTITY,HTTP_401_UNAUTHORIZED,HTTP_400_BAD_REQUEST
 from fastapi import FastAPI
 
 def register_exception_handlers(app: FastAPI):
@@ -36,4 +36,11 @@ def register_exception_handlers(app: FastAPI):
         return JSONResponse(
             status_code=HTTP_400_BAD_REQUEST,
             content={"detail": "Email ya existente"},
+        )
+    
+    @app.exception_handler(UserOrPasswordError)
+    async def email_exists_handler(request: Request, exc: UserOrPasswordError):
+        return JSONResponse(
+            status_code=HTTP_401_UNAUTHORIZED,
+            content={"detail": "Usuario o contraseña incorrectos"},
         )
