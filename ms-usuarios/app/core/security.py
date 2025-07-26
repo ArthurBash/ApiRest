@@ -4,12 +4,14 @@ from typing import Optional, Union
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import jwt, JWTError
+# from jose import jwt, JWTError
+import jwt
+from jwt.exceptions import InvalidTokenError
 from passlib.context import CryptContext
 
 from app.core.config import settings
 from app.models.user import User
-from app.services.user import get_user_by_username
+from app.services.user import get_user_by_username,get_user,decode_id
 from app.api.deps import get_db
 from sqlalchemy.orm import Session
 from app.exceptions import UserOrPasswordError
@@ -39,7 +41,7 @@ def decode_access_token(token: str) -> dict:
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         return payload
-    except JWTError:
+    except InvalidTokenError:
         return None
 
 def authenticate_user(username: str, password: str, db):
@@ -66,11 +68,12 @@ def get_current_user(
     if payload is None:
         raise credentials_exception
 
-    username: str = payload.get("sub")
-    if username is None:
+    user_id: str = payload.get("sub")
+    if user_id is None:
         raise credentials_exception
 
-    user = get_user_by_username(db,username)
+    user_id_docode = decode_id(user_id)
+    user = get_user(db,user_id_docode)
     if user is None:
         raise credentials_exception
 

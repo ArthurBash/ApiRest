@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     POSTGRES_PORT: int = 5432
     DATABASE_URL: str
     SECRET_KEY: str
-
+    ALGORITHM: str
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

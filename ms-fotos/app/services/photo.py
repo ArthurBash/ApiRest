@@ -2,7 +2,8 @@ from sqlalchemy.orm import Session
 from app.models.photo import Photo as PhotoModel
 from app.schemas.photo import PhotoCreate,PhotoRead
 from app.models.photo import Photo
-from fastapi import  Depends,Path
+from fastapi import  Depends,Path,HTTPException,UploadFile
+
 from app.api.deps import get_db
 from app.schemas.photo import PhotoUpdate, PhotoUpdatePUT
 
@@ -14,6 +15,12 @@ from app.exceptions import ErrorDecodificacion,ErrorFotoNoEncontrada
 from hashids import Hashids
 import os
 from dotenv import load_dotenv
+
+#s3
+
+import boto3
+from botocore.client import Config
+import uuid
 
 def get_list(db,skip,limit):
     return db.query(Photo).offset(skip).limit(limit).all()
@@ -118,3 +125,40 @@ def photo_to_id_hasheado(photo) -> PhotoRead:
 
 
 
+# Configuración de MinIO
+MINIO_ENDPOINT = "minio:9000"
+MINIO_ACCESS_KEY = "minioadmin"
+MINIO_SECRET_KEY = "minioadmin"
+BUCKET_NAME = "fotos"
+
+# Cliente S3
+s3 = boto3.client(
+    's3',
+    endpoint_url=f"http://{MINIO_ENDPOINT}",
+    aws_access_key_id=MINIO_ACCESS_KEY,
+    aws_secret_access_key=MINIO_SECRET_KEY,
+    config=Config(signature_version='s3v4'),
+    region_name='us-east-1',
+)
+
+async def upload_photo(file: UploadFile):
+    try:
+        content = await file.read()
+
+        filename = f"{uuid.uuid4()}_{file.filename}"
+
+        s3.put_object(
+            Bucket=BUCKET_NAME,
+            Key=filename,
+            Body=content,
+            ContentType=file.content_type
+        )
+
+        return {
+            "message": "Imagen subida con éxito",
+            "filename": filename,
+            "url": f"http://{MINIO_ENDPOINT}/{BUCKET_NAME}/{filename}"
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

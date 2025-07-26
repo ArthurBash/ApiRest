@@ -93,7 +93,8 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     password = form_data.password
     user = authenticate_user(username, password,db)
     access_token_expires = timedelta(minutes=30)   #TODO sacar o dejar , ver services
-    access_token = create_access_token(subject=user.username, expires_delta=access_token_expires)
+    user_hash = user_to_id_hasheado(user)
+    access_token = create_access_token(subject=user_hash.id, expires_delta=access_token_expires)
     return {"access_token": access_token, "token_type": "bearer"}
 
 
