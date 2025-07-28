@@ -1,0 +1,33 @@
+<!-- base.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Mi App{% endblock %}</title>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/bulma.min.css') }}">
+
+<!--Pequeño script para que se muestre el nombre de la foto carga -->
+
+  <script> 
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const fileInput = document.querySelector('.file-input');
+    const fileName = document.querySelector('.file-name');
+
+    fileInput.onchange = () => {
+      if (fileInput.files.length > 0) {
+        fileName.textContent = fileInput.files[0].name;
+      }
+    };
+  });
+</script>
+</head>
+<body>
+  {% block body %}
+    {% block content %}{% endblock %}
+  {% endblock %}
+</body>
+</html>

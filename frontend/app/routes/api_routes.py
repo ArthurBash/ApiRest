@@ -1,24 +1,18 @@
 from flask import Blueprint
-from app.controllers.user_controller import UserController
+from app.controllers.login import login_view
+from app.controllers.dashboard import dashboard_view, logout_view
+from app.controllers.users import users_view
+from app.controllers.photo import form_photo,load_photo
+from app.controllers.create_user import create_user
 
-user_bp = Blueprint('user_bp', __name__)
+main = Blueprint("main", __name__)
 
-@user_bp.route('/users', methods=['POST'])
-def create_user():
-    return UserController.create_user()
+main.route("/", methods=["GET", "POST"])(login_view)
+main.route("/dashboard")(dashboard_view)
+main.route("/logout")(logout_view)
+main.route("/users")(users_view)
+main.route("/create_user")(create_user)
+main.route("/form_photo")(form_photo)
 
-@user_bp.route('/users', methods=['GET'])
-def get_all_users():
-    return UserController.get_all_users()
+main.route("/load_photo",methods=["POST"])(load_photo)
 
-@user_bp.route('/users/<int:user_id>', methods=['GET'])
-def get_user(user_id):
-    return UserController.get_user(user_id)
-
-@user_bp.route('/users/<int:user_id>', methods=['PUT'])
-def update_user(user_id):
-    return UserController.update_user(user_id)
-
-@user_bp.route('/users/<int:user_id>', methods=['DELETE'])
-def delete_user(user_id):
-    return UserController.delete_user(user_id)

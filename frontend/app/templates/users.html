@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bulma.min.css') }}">
+</head>
+<body>
+    <section class="section">
+        <div class="container">
+            <h1 class="title has-text-centered">Usuarios</h1>
+
+            {% if usuarios %}
+                <div class="columns is-multiline">
+                    {% for usuario in usuarios %}
+                        <div class="column is-one-quarter">
+                            <div class="card">
+                                <div class="card-content">
+                                    <p class="title is-5">{{ usuario.nombre }}</p>
+                                    <p class="subtitle is-6">{{ usuario.email }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="notification is-warning">
+                    No hay usuarios para mostrar.
+                </div>
+            {% endif %}
+
+            <div class="has-text-centered mt-5">
+                <a href="{{ url_for('main.logout_view') }}" class="button is-danger">Cerrar sesión</a>
+            </div>
+        </div>
+    </section>
+</body>
+</html>

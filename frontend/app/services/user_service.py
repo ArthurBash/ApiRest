@@ -1,28 +1,29 @@
-from .. import db, bcrypt
+import requests
 
-class UserService(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    nombre = db.Column(db.String(50), nullable=False)
-    apellido = db.Column(db.String(50), nullable=False)
-    alias = db.Column(db.String(30), unique=True, nullable=False)
-    genero = db.Column(db.String(15), nullable=False)
-    usuario = db.Column(db.String(30), unique=True, nullable=False)
-    contraseña = db.Column(db.String(128), nullable=False)
+API_URL = "http://ms-usuarios/api/users"
 
-    def __init__(self, nombre, apellido, alias, genero, usuario, contraseña):
-        self.nombre = nombre
-        self.apellido = apellido
-        self.alias = alias
-        self.genero = genero
-        self.usuario = usuario
-        self.contraseña = bcrypt.generate_password_hash(contraseña).decode('utf-8')
+def get_data_users(token):
+    headers = {"Authorization": f"Bearer {token}"}
 
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'nombre': self.nombre,
-            'apellido': self.apellido,
-            'alias': self.alias,
-            'genero': self.genero.value,
-            'usuario': self.usuario
-        }
+    try:
+        response = requests.get(API_URL, headers=headers)
+        response.raise_for_status()
+        return response.json(), None
+    except requests.exceptions.HTTPError as e:
+        return None, f"Error HTTP: {e.response.status_code} - {e.response.reason}"
+    except requests.exceptions.RequestException as e:
+        return None, "No se pudo conectar con el microservicio de usuarios"
+
+
+
+def get_data_user(token):
+    headers = {"Authorization": f"Bearer {token}"}
+
+    try:
+        response = requests.get(f"{API_URL}/me", headers=headers)
+        response.raise_for_status()
+        return response.json(), None
+    except requests.exceptions.HTTPError as e:
+        return None, f"Error HTTP: {e.response.status_code} - {e.response.reason}"
+    except requests.exceptions.RequestException as e:
+        return None, "No se pudo conectar con el microservicio de usuarios"

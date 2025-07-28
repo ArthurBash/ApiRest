@@ -6,3 +6,5 @@ gunicorn==23.0.0
 python-dotenv==1.1.1
 Flask-Migrate==4.1.0
 Flask-Bcrypt==1.0.1
+
+requests==2.32.4

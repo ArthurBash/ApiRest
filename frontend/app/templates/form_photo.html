@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block title %}Cargar Foto{% endblock %}
+
+
+
+
+{% block content %}
+<section class="section">
+  <div class="container">
+    <h1 class="title">Cargar Foto</h1>
+
+    <form method="POST" action="{{ url_for('main.load_photo') }}" enctype="multipart/form-data">
+      <div class="field">
+        <label class="label">Nombre de la foto</label>
+        <div class="control">
+          <input class="input" type="text" name="name" placeholder="vacaciones_2023.jpg" required>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label">Ruta</label>
+        <div class="control">
+          <input class="input" type="text" name="path" placeholder="/uploads/user1/vacaciones.jpg" required>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label">ID de usuario</label>
+        <div class="control">
+          <input class="input" type="text" name="user_id" placeholder="wbl2WeMN" required>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label">ID de carpeta</label>
+        <div class="control">
+          <input class="input" type="text" name="folder_id" placeholder="AXQLDQLJ" required>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label">Seleccionar archivo</label>
+        <div class="file has-name is-boxed">
+          <label class="file-label">
+            <input class="file-input" type="file" name="file" required>
+            <span class="file-cta">
+              <span class="file-icon">
+                <i class="fas fa-upload"></i>
+              </span>
+              <span class="file-label">Elegir archivo…</span>
+            </span>
+            <span class="file-name">Ningún archivo seleccionado</span>
+          </label>
+        </div>
+      </div>
+
+
+      <div class="field mt-5">
+        <div class="control">
+          <button class="button is-primary" type="submit">Cargar Foto</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}
