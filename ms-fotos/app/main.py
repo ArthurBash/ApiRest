@@ -1,12 +1,11 @@
+# app/main.py
+
 from fastapi import FastAPI
 from app.db.session import engine
 from app.db.base import Base
-from app.api.v1 import users
-from app.handlers.errors import register_exception_handlers
+from app.api.v1 import photos
 
-
-
-app = FastAPI(title="Microservicio de Usuarios")
+app = FastAPI(title="Microservicio de fotos")
 
 # Creamos esquema al arrancar la aplicación (solo en el proceso que sirve peticiones)
 @app.on_event("startup")
@@ -14,5 +13,5 @@ def create_schema():
     Base.metadata.create_all(bind=engine)
 
 # Incluimos el router
-app.include_router(users.router)
-register_exception_handlers(app) 
+app.include_router(photos.router)
+# register_exception_handlers(app)  # si vuelves a habilitar tus handlers

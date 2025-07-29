@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from app.models.user import User as UserModel
-from app.schemas.user import UserCreate,UserRead
+from app.schemas.user import UserCreate,UserRead,UserUpdate,UserUpdatePUT
 from app.exceptions import UsernameAlreadyExists, EmailAlreadyExists
 
 from passlib.context import CryptContext
@@ -10,12 +10,17 @@ from hashids import Hashids
 import os
 from dotenv import load_dotenv
 
+# TODO quitar load_dotoenv verificar que se necesita y si carga correctamente. tratando de levantar las variabeles de entorno con os desde el contendor ejecutnadose.
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def get_user(db: Session, user_id: int):
     return db.query(UserModel).filter(UserModel.id == user_id).first()
+
+def get_users(db: Session,skip,limit):
+    users = db.query(UserModel).offset(skip).limit(limit).all()
+    return users
 
 
 def get_user_by_username(db: Session, username: str):
@@ -40,7 +45,7 @@ def create_user(db: Session, user_in: UserCreate):
     return db_user
 
 
-def update_user(user_in,db,user_db):
+def update_user_patch(user_db, user_in: UserUpdate, db: Session):
     user_data = user_in.dict(exclude_unset=True)  # Solo campos enviados
 
     for field, value in user_data.items():
@@ -49,6 +54,17 @@ def update_user(user_in,db,user_db):
     db.add(user_db)
     db.commit()
     db.refresh(user_db)
+    return user_db
+
+def update_user_put(user_db, user_in: UserUpdatePUT, db: Session):
+    user_db.name = user_in.name
+    user_db.lastname = user_in.lastname
+    user_db.username = user_in.username
+    user_db.email = user_in.email
+    db.add(user_db)
+    db.commit()
+    db.refresh(user_db)
+    return user_db
 
 def delete_user(user_db,db):
     db.delete(user_db)
@@ -72,7 +88,7 @@ def authenticate_user(db: Session, username: str, password: str):
         return None
     return user
 
-load_dotenv()  # Carga variables de .env
+load_dotenv() 
 
 HASHIDS_SALT = os.getenv("HASHIDS_SALT", "valor_por_defecto_no_conveniente")
 HASHIDS_MIN_LENGTH = int(os.getenv("HASHIDS_MIN_LENGTH", 8))
@@ -88,8 +104,6 @@ def decode_id(hashid: str) -> int:
         return decoded[0]
     raise ValueError("ID inválido")
 
-from app.services.user import encode_id
-
 def user_to_id_hasheado(user) -> UserRead:
     return UserRead(
         id= encode_id(user.id),   
@@ -98,3 +112,6 @@ def user_to_id_hasheado(user) -> UserRead:
         lastname= user.lastname,
         email= user.email,
     )
+
+
+

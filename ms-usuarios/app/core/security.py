@@ -4,17 +4,20 @@ from typing import Optional, Union
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import jwt, JWTError
+# from jose import jwt, JWTError
+import jwt
+from jwt.exceptions import InvalidTokenError
 from passlib.context import CryptContext
 
 from app.core.config import settings
 from app.models.user import User
-from app.services.user import get_user_by_username
+from app.services.user import get_user_by_username,get_user,decode_id
 from app.api.deps import get_db
 from sqlalchemy.orm import Session
+from app.exceptions import UserOrPasswordError
 
 # Esquema de autenticación
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/users/token/login")
 
 # Contexto de hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -38,15 +41,16 @@ def decode_access_token(token: str) -> dict:
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         return payload
-    except JWTError:
+    except InvalidTokenError:
         return None
 
-def authenticate_user(username: str, password: str,db):
-    user = get_user_by_username(db,username)
-    if not user:
-        return False
-    if not verify_password(password, user.hashed_password):
-        return False
+def authenticate_user(username: str, password: str, db):
+    user = get_user_by_username(db, username)
+    
+    if not user or not verify_password(password, user.hashed_password):
+        raise UserOrPasswordError()
+    
+    
     return user
 
 
@@ -58,17 +62,18 @@ def get_current_user(
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="El token es invalido",
-        headers={"WWW-Authenticate": "Bearer"},
+        headers={"Authenticate": "Bearer"},
     )
     payload = decode_access_token(token)
     if payload is None:
         raise credentials_exception
 
-    username: str = payload.get("sub")
-    if username is None:
+    user_id: str = payload.get("sub")
+    if user_id is None:
         raise credentials_exception
 
-    user = get_user_by_username(db,username)
+    user_id_docode = decode_id(user_id)
+    user = get_user(db,user_id_docode)
     if user is None:
         raise credentials_exception
 

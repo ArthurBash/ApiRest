@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bulma.min.css') }}">
+    <!-- FontAwesome para iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+<nav class="navbar is-primary" role="navigation" aria-label="main navigation">
+  <div class="navbar-brand">
+    <a class="navbar-item" href="/">
+      <strong>Mi App</strong>
+    </a>
+  </div>
+
+  <div class="navbar-menu">
+    <div class="navbar-start">
+      <a class="navbar-item" href="{{ url_for('main.users_view') }}">
+        <span class="icon">
+          <i class="fas fa-users"></i>
+        </span>
+        <span>Ver Usuarios</span>
+      </a>
+      <a class="navbar-item" href="{{ url_for('main.create_user') }}">
+        <span class="icon">
+          <i class="fas fa-user-plus"></i>
+        </span>
+        <span>Crear Usuario</span>
+      </a>
+      <a class="navbar-item" href="{{ url_for('main.form_photo') }}">
+        <span class="icon">
+          <i class="fas fa-image"></i>
+        </span>
+        <span>Cargar foto</span>
+      </a>
+    </div>
+  </div>
+</nav>
+
+<section class="section">
+  <div class="container has-text-centered">
+    <h1 class="title is-1">
+      Bienvenido {{ user.name }} {{ user.lastname }}
+    </h1>
+    <h2 class="subtitle is-3">
+      Tu email es {{ user.email }}
+    </h2>
+  </div>
+</section>
+
+</body>
+</html>

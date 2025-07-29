@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block title %}Crear Usuario{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="container">
+    <h1 class="title">Crear Usuario</h1>
+    <form method="POST" action="{{ url_for('main.users_view') }}">
+      <div class="field">
+        <label class="label">Nombre</label>
+        <div class="control">
+          <input class="input" type="text" name="name" placeholder="Arturo" required>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label">Apellido</label>
+        <div class="control">
+          <input class="input" type="text" name="lastname" placeholder="Wettstein" required>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label">Nombre de usuario</label>
+        <div class="control">
+          <input class="input" type="text" name="username" placeholder="artur" required>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label">Email</label>
+        <div class="control">
+          <input class="input" type="email" name="email" placeholder="arturo@gmail.com" required>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label">Contraseña</label>
+        <div class="control">
+          <input class="input" type="password" name="password" placeholder="contraseñaSegura" required>
+        </div>
+      </div>
+
+      <div class="field mt-5">
+        <div class="control">
+          <button class="button is-primary" type="submit">Crear Usuario</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}

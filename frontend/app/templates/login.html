@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}Login{% endblock %}
+
+{% block body %}
+<section class="hero is-fullheight">
+  <div class="hero-body">
+    <div class="container">
+      <div class="columns is-centered">
+        <div class="column is-4-desktop is-6-tablet">
+          <form action="{{ url_for('main.login_view') }}" method="POST" class="box">
+            <h1 class="title has-text-centered">Iniciar Sesión</h1>
+
+            <div class="field">
+              <label class="label">Usuario</label>
+              <div class="control has-icons-left">
+                <input class="input" type="text" name="username" placeholder="Tu usuario" required>
+                <span class="icon is-small is-left">
+                  <i class="fas fa-user"></i>
+                </span>
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="label">Contraseña</label>
+              <div class="control has-icons-left">
+                <input class="input" type="password" name="password" placeholder="••••••••" required>
+                <span class="icon is-small is-left">
+                  <i class="fas fa-lock"></i>
+                </span>
+              </div>
+            </div>
+
+            <div class="field">
+              <button class="button is-primary is-fullwidth">Ingresar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

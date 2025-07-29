@@ -4,6 +4,7 @@ from typing import Optional
 
 from typing import Optional
 
+#TODO agregar descripcion en las APIs
 
 class UserUpdate(BaseModel):
     name: Optional[str] = Field(default=None)
@@ -12,11 +13,10 @@ class UserUpdate(BaseModel):
     email: Optional[EmailStr] = Field(default=None)
 
 class UserUpdatePUT(BaseModel):
-    name: Optional[str] 
-    lastname: Optional[str] 
-    username: Optional[str] 
-    email: Optional[EmailStr] 
-
+    name: str
+    lastname: str
+    username: str
+    email: EmailStr
 
 class UserBase(BaseModel):
     name: str = Field(..., example="Arturo")

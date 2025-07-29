@@ -1,0 +1,150 @@
+
+services:
+  db-usuarios:
+    container_name: db-usuarios
+    image: postgres:13
+    env_file:
+    - ms-usuarios/.env
+    volumes:
+      - pgdata-usuarios:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "admin", "-d", "databaseUsuarios", "-p", "5432"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ms-net
+
+
+  ms-usuarios:
+    container_name: ms-usuarios
+    # profiles: ["ms-usuarios"]
+    build:
+      context: ms-usuarios
+      dockerfile: Dockerfile  
+    ports:
+      - "8000:80"
+    env_file:
+    - ms-usuarios/.env
+    volumes:
+      - ./ms-usuarios/app:/code/app
+    networks:
+      - ms-net
+    depends_on:
+      db-usuarios:
+        condition: service_healthy
+
+
+  db-fotos:
+    container_name: db-fotos
+    # profiles: ["ms-fotos"]
+    image: postgres:13
+    env_file:
+    - ms-fotos/.env
+    volumes:
+      - pgdata-fotos:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "admin", "-d", "databaseFotos", "-p", "5432"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ms-net
+
+  ms-fotos:
+    container_name: ms-fotos
+    build:
+      context: ms-fotos
+      dockerfile: Dockerfile  
+    env_file:
+    - ms-fotos/.env
+    volumes:
+      - ./ms-fotos/app:/code/app
+    ports:
+      - "8001:80"
+    depends_on:
+      db-fotos:
+        condition: service_healthy
+    networks:
+      - ms-net
+    
+
+        
+    
+
+  pgadmin4:
+    container_name: pgadmin
+    image: dpage/pgadmin4:9.5.0
+    ports:
+      - "5050:80"
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@admin.com
+      - PGADMIN_DEFAULT_PASSWORD=SuperSecret
+    volumes:
+    - pgadmin-data:/var/lib/pgadmin
+    networks:
+      - ms-net
+  
+
+  frontend:
+    container_name: frontend-flask
+    build:
+      context: frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./frontend:/app
+    networks:
+      - ms-net
+    depends_on:
+      ms-usuarios:
+        condition: service_started
+      ms-fotos:
+        condition: service_started
+  
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    ports:
+      - "9000:9000"  # API
+      - "9001:9001"  # Consola web
+    env_file:
+    - ms-fotos/.env
+    networks:
+      - ms-net
+    volumes:
+      - minio_data:/data
+    command: server --console-address ":9001" /data
+  
+  minio-init:
+    image: minio/mc
+    depends_on:
+      - minio
+    env_file:
+    - ms-fotos/.env
+    entrypoint: > 
+      /bin/sh -c "
+        # Esperar hasta que MinIO esté listo
+        until mc alias set myminio http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD}; do
+          echo 'Esperando a MinIO...';
+          sleep 3;
+        done;
+
+        echo 'MinIO listo. Creando bucket...';
+        mc mb myminio/fotos || true;
+        mc anonymous set public myminio/fotos || true;
+      "
+    networks:
+      - ms-net
+
+volumes:
+  pgdata-usuarios:
+  pgdata-fotos:
+  pgadmin-data:
+  minio_data:
+
+networks:
+  ms-net:
+    name: microservicio 
+    driver: bridge
