@@ -13,4 +13,4 @@ python-multipart==0.0.20
 
 
 pyjwt==2.10.1
-boto3==1.39.14
+minio==7.2.16

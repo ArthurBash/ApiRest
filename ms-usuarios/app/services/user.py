@@ -10,6 +10,7 @@ from hashids import Hashids
 import os
 from dotenv import load_dotenv
 
+# TODO quitar load_dotoenv verificar que se necesita y si carga correctamente. tratando de levantar las variabeles de entorno con os desde el contendor ejecutnadose.
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -111,3 +112,6 @@ def user_to_id_hasheado(user) -> UserRead:
         lastname= user.lastname,
         email= user.email,
     )
+
+
+

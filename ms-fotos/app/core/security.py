@@ -3,9 +3,9 @@ from jwt.exceptions import InvalidTokenError
 from app.core.config import settings
 
 from fastapi import Depends
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="ms-usuarios:8000/token/login")
+bearer_scheme = HTTPBearer()
 
 import logging
 def decode_access_token(token: str) -> dict:
@@ -15,7 +15,8 @@ def decode_access_token(token: str) -> dict:
     except InvalidTokenError:
         return None
 
-def validate_token(token: str = Depends(oauth2_scheme)):
+def validate_token(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)):
+    token = credentials.credentials
     return decode_access_token(token)
 
 # def get_current_user(

@@ -6,13 +6,13 @@ Todas las fotos son almacenadas en **MinIO (S3 compatible)**. La seguridad está
 ---
 
 ## 🏛️ Arquitectura General
-
+```
 Frontend (Flask)
 │
 ├──> Microservicio Usuarios (FastAPI + PostgreSQL) [JWT / Hash Passwords]
 ├──> Microservicio Fotos (FastAPI + PostgreSQL + MinIO S3)
 └──> Microservicio Carpetas (FastAPI + MongoDB)
-
+```
 
 ---
 
@@ -83,7 +83,7 @@ Servicio	URL
 > - API Usuarios	http://localhost:8000/docs  (funcionamiento)
 > - API Fotos	http://localhost:8001/docs      (funcionando)
 > - API Carpetas	http://localhost:8003/docs
-> - MinIO	http://localhost:9001
+> - MinIO	http://localhost:9001   (funcionando)
 
 
 

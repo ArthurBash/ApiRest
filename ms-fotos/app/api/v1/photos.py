@@ -1,5 +1,8 @@
 from datetime import timedelta
-from fastapi import APIRouter, Depends, status, Path,UploadFile,File
+from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException, status,Path
+from typing import Optional
+
 
 from sqlalchemy.orm import Session
 from typing import List
@@ -8,8 +11,7 @@ from typing import List
 from app.schemas.photo import PhotoCreate,PhotoRead,PhotoUpdate,PhotoUpdatePUT
 from app.services.photo import (
     create_photo,photo_to_id_hasheado,get_list,get_existing_photo,
-    update_photo_put,update_photo_patch,delete_photo,
-    upload_photo)
+    update_photo_put,update_photo_patch,delete_photo,upload_image_to_minio,create_photo_entry)
 
 from app.models.photo import Photo
 from app.api.deps import get_db
@@ -17,8 +19,21 @@ from app.core.security import validate_token
 
 router = APIRouter(prefix="/api/photo", tags=["photo"])
 
+@router.post("", response_model=PhotoRead, status_code=status.HTTP_201_CREATED)
+async def api_create_photo(
+    name: str = Form(...),
+    user_id: str = Form(...),
+    folder_id: str = Form(...),
+    is_active: Optional[bool] = Form(None),
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    token_valido = Depends(validate_token)
+):
+    path = await upload_image_to_minio(file)
+    photo = create_photo_entry(db, name, path, user_id, folder_id, is_active)
+    return photo_to_id_hasheado(photo)
 
-@router.post("/",response_model = PhotoRead,status_code=status.HTTP_201_CREATED)
+@router.post("",response_model = PhotoRead,status_code=status.HTTP_201_CREATED)
 def api_create_photo(
     photo_in : PhotoCreate, db: Session =  Depends(get_db),
     token_valido = Depends(validate_token)):
@@ -27,7 +42,7 @@ def api_create_photo(
     return photo_to_id_hasheado(photo)
 
 
-@router.get("/", response_model=List[PhotoRead])
+@router.get("", response_model=List[PhotoRead])
 def api_list_photos(
     skip: int = 0, limit: int = 100, db: Session = Depends(get_db),
     token_valido = Depends(validate_token)):

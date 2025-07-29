@@ -18,9 +18,13 @@ from dotenv import load_dotenv
 
 #s3
 
-import boto3
-from botocore.client import Config
-import uuid
+# import boto3
+# from botocore.client import Config
+
+#minio
+from fastapi import  File, UploadFile, HTTPException
+from uuid import uuid4
+from app.services.minio_client import get_minio_client
 
 def get_list(db,skip,limit):
     return db.query(Photo).offset(skip).limit(limit).all()
@@ -39,23 +43,6 @@ def get_existing_photo(photo_id: str = Path(...), db: Session = Depends(get_db))
     return photo
 
 
-def create_photo(db: Session, photo_in: PhotoCreate):
-    user_id_int = decode_id(photo_in.user_id)      
-    folder_id_int = decode_id(photo_in.folder_id)  
-
-    db_photo = PhotoModel(
-        name = photo_in.name,
-        user_id = user_id_int,
-        folder_id = folder_id_int,
-        date = photo_in.date,
-        path = photo_in.path,
-        is_active = photo_in.is_active
-
-    )
-    db.add(db_photo)
-    db.commit()
-    db.refresh(db_photo)
-    return db_photo
 
 
 def update_photo_patch(photo_db:Photo, photo_in: PhotoUpdate, db: Session):
@@ -124,41 +111,88 @@ def photo_to_id_hasheado(photo) -> PhotoRead:
 
 
 
+# async def upload_photo(file: UploadFile):
+#     try:
+#         content = await file.read()
 
-# Configuración de MinIO
-MINIO_ENDPOINT = "minio:9000"
-MINIO_ACCESS_KEY = "minioadmin"
-MINIO_SECRET_KEY = "minioadmin"
-BUCKET_NAME = "fotos"
+#         filename = f"{uuid.uuid4()}_{file.filename}"
 
-# Cliente S3
-s3 = boto3.client(
-    's3',
-    endpoint_url=f"http://{MINIO_ENDPOINT}",
-    aws_access_key_id=MINIO_ACCESS_KEY,
-    aws_secret_access_key=MINIO_SECRET_KEY,
-    config=Config(signature_version='s3v4'),
-    region_name='us-east-1',
-)
+#         s3.put_object(
+#             Bucket=BUCKET_NAME,
+#             Key=filename,
+#             Body=content,
+#             ContentType=file.content_type
+#         )
 
-async def upload_photo(file: UploadFile):
-    try:
-        content = await file.read()
+#         return {
+#             "message": "Imagen subida con éxito",
+#             "filename": filename,
+#             "url": f"http://{MINIO_ENDPOINT}/{BUCKET_NAME}/{filename}"
+#         }
 
-        filename = f"{uuid.uuid4()}_{file.filename}"
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
 
-        s3.put_object(
-            Bucket=BUCKET_NAME,
-            Key=filename,
-            Body=content,
-            ContentType=file.content_type
-        )
+def create_photo_entry(db: Session, name: str, path: str, user_id: str, folder_id: str, is_active: bool):
+    photo_in = PhotoCreate(
+        name=name,
+        path=path,
+        user_id=user_id,
+        folder_id=folder_id,
+        is_active=is_active
+    )
+    photo = create_photo(db, photo_in)
+    return photo
 
-        return {
-            "message": "Imagen subida con éxito",
-            "filename": filename,
-            "url": f"http://{MINIO_ENDPOINT}/{BUCKET_NAME}/{filename}"
-        }
+def create_photo(db: Session, photo_in: PhotoCreate):
+    user_id_int = decode_id(photo_in.user_id)      
+    folder_id_int = decode_id(photo_in.folder_id)  
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    db_photo = PhotoModel(
+        name = photo_in.name,
+        user_id = user_id_int,
+        folder_id = folder_id_int,
+        date = photo_in.date,
+        path = photo_in.path,
+        is_active = photo_in.is_active
+
+    )
+    db.add(db_photo)
+    db.commit()
+    db.refresh(db_photo)
+    return db_photo
+
+
+async def upload_image_to_minio(file: UploadFile = File(...)):
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="Archivo no es una imagen válida")
+
+#    # Validación de tamaño
+#     if file.content_type > 5 * 1024 * 1024:  # 5MB
+#         raise HTTPException(status_code=400, detail="Archivo demasiado grande")
+
+
+    # Generar path aleatorio
+    # folder = uuid4().hex[:8]      # ejemplo: '9a3b2f1d
+    folder = "fotos_prueba"
+    filename = f"{file.filename}_{uuid4().hex}"
+    path = f"{folder}/{filename}"
+
+    bucket_name = os.getenv("MINIO_BUCKET", "fotos")
+
+
+    minio_client = get_minio_client()
+    # Subir a MinIO
+    minio_client.put_object(
+        bucket_name,
+        path,
+        data=file.file, 
+        length=-1,
+        part_size=5 * 1024 * 1024,
+        content_type=file.content_type
+    )
+
+    # Registrar path en tu modelo/PostgreSQL
+    # insert_path_to_db(path)  <-- ya lo tenés funcionando
+
+    return path

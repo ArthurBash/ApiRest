@@ -1,7 +1,7 @@
 
 
-def ErrorDecodificacion(Exception):
+class ErrorDecodificacion(Exception):
     pass
 
-def ErrorFotoNoEncontrada(Exception):
+class ErrorFotoNoEncontrada(Exception):
     pass

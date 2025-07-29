@@ -67,6 +67,8 @@ services:
         condition: service_healthy
     networks:
       - ms-net
+    
+
         
     
 
@@ -101,11 +103,46 @@ services:
       ms-fotos:
         condition: service_started
   
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    ports:
+      - "9000:9000"  # API
+      - "9001:9001"  # Consola web
+    env_file:
+    - ms-fotos/.env
+    networks:
+      - ms-net
+    volumes:
+      - minio_data:/data
+    command: server --console-address ":9001" /data
+  
+  minio-init:
+    image: minio/mc
+    depends_on:
+      - minio
+    env_file:
+    - ms-fotos/.env
+    entrypoint: > 
+      /bin/sh -c "
+        # Esperar hasta que MinIO esté listo
+        until mc alias set myminio http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD}; do
+          echo 'Esperando a MinIO...';
+          sleep 3;
+        done;
+
+        echo 'MinIO listo. Creando bucket...';
+        mc mb myminio/fotos || true;
+        mc anonymous set public myminio/fotos || true;
+      "
+    networks:
+      - ms-net
 
 volumes:
   pgdata-usuarios:
   pgdata-fotos:
   pgadmin-data:
+  minio_data:
 
 networks:
   ms-net:

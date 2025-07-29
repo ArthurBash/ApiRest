@@ -14,3 +14,5 @@ passlib[bcrypt]==1.7.4   #para encriptar contraseñas
 python-multipart==0.0.20  #para soportar form data (útil para login)
 
 pyjwt==2.10.1
+
+minio==7.2.16
