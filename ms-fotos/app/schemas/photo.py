@@ -1,8 +1,9 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime
 from app.db.base import Base
 from pydantic import BaseModel, Field
-from typing import Optional
 from datetime import datetime
+from typing import List, Optional
+
 
 
 # Pydantic Models (API Schemas)
@@ -43,4 +44,22 @@ class PhotoRead(PhotoBase):
         "from_attributes": True
     }
 
+
+class PhotoResponse(BaseModel):
+    id: int
+    name: str
+    path: str
+    user_id: int
+    folder_id: int
+    date: datetime
+    signed_url: str  # URL pre-firmada de MinIO
+
+    class Config:
+        from_attributes = True
     
+class PhotoListResponse(BaseModel):
+    photos: List[PhotoResponse]
+    total: int
+    page: int
+    page_size: int
+    has_next: bool

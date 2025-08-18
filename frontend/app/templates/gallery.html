@@ -1,0 +1,68 @@
+{# templates/gallery.html #}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>{% block title %}Galería{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/bulma.min.css') }}">
+  <style>
+    .grid { display: flex; flex-wrap: wrap; gap: 10px; padding: 10px; }
+    .grid img { width: 200px; cursor: pointer; border-radius: 4px; }
+    .fullscreen {
+      position: fixed; top:0; left:0; width:100vw; height:100vh;
+      background: rgba(0,0,0,0.8); display:none;
+      align-items:center; justify-content:center; z-index: 1000;
+    }
+    .fullscreen img { max-width:90%; max-height:90%; }
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+  {% block body %}
+  <div class="grid" id="gallery"></div>
+  <div id="fullscreen" class="fullscreen" onclick="this.style.display='none'">
+    <img id="fullscreen-img" alt="Foto ampliada">
+  </div>
+
+  <script>
+    // Recibimos user_id por Jinja
+    const userId = "{{ user_id }}";
+    let skip = 0, limit = 10, loading = false;
+    const gallery = document.getElementById("gallery");
+    const fullscreen = document.getElementById("fullscreen");
+    const fullscreenImg = document.getElementById("fullscreen-img");
+
+    async function loadMore() {
+      if (loading) return;
+      loading = true;
+      const res = await fetch(`/api/photo/photos/${userId}?skip=${skip}&limit=${limit}`);
+      const urls = await res.json();
+      urls.forEach(url => {
+        const img = document.createElement("img");
+        img.src = url;
+        img.loading = "lazy";
+        img.onclick = () => {
+          fullscreenImg.src = url;
+          fullscreen.style.display = "flex";
+        };
+        gallery.appendChild(img);
+      });
+      if (urls.length) skip += limit;
+      loading = false;
+    }
+
+    window.addEventListener("scroll", () => {
+      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 200) {
+        loadMore();
+      }
+    });
+
+    // carga inicial
+    loadMore();
+  </script>
+  {% endblock %}
+
+  {% block extra_body %}{% endblock %}
+</body>
+</html>

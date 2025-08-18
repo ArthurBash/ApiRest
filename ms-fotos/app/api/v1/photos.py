@@ -1,21 +1,23 @@
 from datetime import timedelta
-from fastapi import APIRouter, Depends, status
-from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException, status,Path
+from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException, status,Path,Query
 from typing import Optional
 
 
 from sqlalchemy.orm import Session
 from typing import List
+# from app.services.minio_client import get_urls
+
 
 
 from app.schemas.photo import PhotoCreate,PhotoRead,PhotoUpdate,PhotoUpdatePUT
 from app.services.photo import (
     create_photo,photo_to_id_hasheado,get_list,get_existing_photo,
-    update_photo_put,update_photo_patch,delete_photo,upload_image_to_minio,create_photo_entry)
+    update_photo_put,update_photo_patch,delete_photo,upload_image_to_minio,
+    create_photo_entry,PhotoService)
 
 from app.models.photo import Photo
-from app.api.deps import get_db
-from app.core.security import validate_token
+from app.api.deps import get_db,get_photo_service
+from app.core.security import validate_token,get_current_user
 
 router = APIRouter(prefix="/api/photo", tags=["photo"])
 
@@ -29,7 +31,7 @@ async def api_create_photo(
     db: Session = Depends(get_db),
     token_valido = Depends(validate_token)
 ):
-    path = await upload_image_to_minio(file)
+    path = await upload_image_to_minio(user_id,file)
     photo = create_photo_entry(db, name, path, user_id, folder_id, is_active)
     return photo_to_id_hasheado(photo)
 
@@ -50,11 +52,11 @@ def api_list_photos(
     return [photo_to_id_hasheado(p) for p in photos]
 
 
-@router.get("/{photo_id}",response_model = PhotoRead)
-def api_get_photo(photo_id: str = Path(...),db: Session =  Depends(get_db),token_valido = Depends(validate_token)):
+# @router.get("/{photo_id}",response_model = PhotoRead)
+# def api_get_photo(photo_id: str = Path(...),db: Session =  Depends(get_db),token_valido = Depends(validate_token)):
 
-    photo = get_existing_photo(photo_id,db)
-    return photo_to_id_hasheado(photo)
+#     photo = get_existing_photo(photo_id,db)
+#     return photo_to_id_hasheado(photo)
 
 
 
@@ -73,8 +75,7 @@ def api_update_photo(
 def api_update_photo_patch(
     photo_in: PhotoUpdate,
     db: Session = Depends(get_db),
-    photo_db: Photo = Depends(get_existing_photo),
-    token_valido = Depends(validate_token)):
+    photo_db: Photo = Depends(get_existing_photo)):
     
     photo_update = update_photo_patch(photo_db,photo_in,db)
     return photo_to_id_hasheado(photo_update)
@@ -92,3 +93,19 @@ def api_delete_user(photo_db = Depends(get_existing_photo),
 @router.post("/upload")
 async def upload_image(file: UploadFile = File(...)):
     content = await file.read()
+
+
+   
+
+@router.get("/photos")
+async def get_photos(
+    folder_id: Optional[int] = None,
+    page: int = 1,
+    page_size: int = 20,
+    db: Session = Depends(get_db),
+    user_id=Depends(get_current_user),
+    photo_service: PhotoService = Depends(get_photo_service) 
+):
+    
+    return photo_service.get_list_photos(db, user_id,  page, page_size,folder_id)
+    

@@ -1,47 +1,174 @@
-<!-- base.html -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Api Rest{% endblock %}</title>
-
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/bulma.min.css') }}">
-
-<!--Pequeño script para que se muestre el nombre de la foto carga -->
-
-
-{% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-    <div class="notifications">
-      {% for category, message in messages %}
-        <div class="notification is-{{ category }}">
-          {{ message }}
-        </div>
-      {% endfor %}
-    </div>
-  {% endif %}
-{% endwith %}
-
-
-  <script> 
-
-  document.addEventListener('DOMContentLoaded', () => {
-    const fileInput = document.querySelector('.file-input');
-    const fileName = document.querySelector('.file-name');
-
-    fileInput.onchange = () => {
-      if (fileInput.files.length > 0) {
-        fileName.textContent = fileInput.files[0].name;
-      }
-    };
-  });
-</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Mi Aplicación{% endblock %}</title>
+    
+    <!-- Bulma CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    
+    <!-- Font Awesome para iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
-  {% block body %}
-    {% block content %}{% endblock %}
-  {% endblock %}
+    <!-- Navbar -->
+    <nav class="navbar is-primary" role="navigation" aria-label="main navigation">
+        <div class="navbar-brand">
+            <a class="navbar-item" href="{{ url_for('main.dashboard_view') }}">
+                <strong>Mi App</strong>
+            </a>
+            
+            <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarBasic">
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+            </a>
+        </div>
+        
+        <div id="navbarBasic" class="navbar-menu">
+            <div class="navbar-start">
+                <a class="navbar-item" href="{{ url_for('main.dashboard_view') }}">
+                    <span class="icon">
+                        <i class="fas fa-home"></i>
+                    </span>
+                    <span>Dashboard</span>
+                </a>
+                
+                {% if session.get('access_token') %}
+                    <a class="navbar-item" href="{{ url_for('main.form_photo') }}">
+                        <span class="icon">
+                            <i class="fas fa-upload"></i>
+                        </span>
+                        <span>Cargar Foto</span>
+                    </a>
+                    
+                    <a class="navbar-item" href="{{ url_for('main.get_photos_endpoint') }}">
+                        <span class="icon">
+                            <i class="fas fa-images"></i>
+                        </span>
+                        <span>Ver Fotos</span>
+                    </a>
+                    
+                    <a class="navbar-item" href="{{ url_for('main.users_view') }}">
+                        <span class="icon">
+                            <i class="fas fa-users"></i>
+                        </span>
+                        <span>Usuarios</span>
+                    </a>
+                {% endif %}
+            </div>
+            
+            <div class="navbar-end">
+                <div class="navbar-item">
+                    <div class="buttons">
+                        {% if session.get('access_token') %}
+                            <!-- Usuario logueado -->
+                            <div class="navbar-item has-dropdown is-hoverable">
+                                <a class="navbar-link">
+                                    <span class="icon">
+                                        <i class="fas fa-user"></i>
+                                    </span>
+                                    <span>{{ session.get('email') or session.get('username') or 'Usuario' }}</span>
+                                </a>
+                                
+                                <div class="navbar-dropdown">
+                                    <hr class="navbar-divider">
+                                    <a class="navbar-item" href="{{ url_for('main.logout_view') }}">
+                                        <span class="icon">
+                                            <i class="fas fa-sign-out-alt"></i>
+                                        </span>
+                                        <span>Cerrar Sesión</span>
+                                    </a>
+                                </div>
+                            </div>
+                        {% else %}
+                            <!-- Usuario no logueado -->
+                            <a class="button is-primary is-light" href="{{ url_for('main.create_user') }}">
+                                <span class="icon">
+                                    <i class="fas fa-user-plus"></i>
+                                </span>
+                                <span>Crear Usuario</span>
+                            </a>
+                            
+                            <a class="button is-primary" href="{{ url_for('main.login_view') }}">
+                                <span class="icon">
+                                    <i class="fas fa-sign-in-alt"></i>
+                                </span>
+                                <span>Iniciar Sesión</span>
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Contenido principal -->
+    <main class="section">
+        <div class="container">
+            <!-- Mensajes flash -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="notification-container">
+                        {% for category, message in messages %}
+                            <div class="notification {% if category == 'error' %}is-danger{% elif category == 'success' %}is-success{% elif category == 'warning' %}is-warning{% else %}is-info{% endif %}">
+                                <button class="delete"></button>
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+            
+            <!-- Título de la página -->
+            {% block page_title %}{% endblock %}
+            
+            <!-- Contenido específico de cada página -->
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+    
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="content has-text-centered">
+            <p>
+                <strong>Mi Aplicación</strong> creada con Flask y Bulma.
+            </p>
+        </div>
+    </footer>
+    
+    <!-- JavaScript para funcionalidad del navbar -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Funcionalidad del burger menu
+            const $navbarBurgers = Array.prototype.slice.call(document.querySelectorAll('.navbar-burger'), 0);
+            
+            if ($navbarBurgers.length > 0) {
+                $navbarBurgers.forEach(el => {
+                    el.addEventListener('click', () => {
+                        const target = el.dataset.target;
+                        const $target = document.getElementById(target);
+                        
+                        el.classList.toggle('is-active');
+                        $target.classList.toggle('is-active');
+                    });
+                });
+            }
+            
+            // Cerrar notificaciones
+            (document.querySelectorAll('.notification .delete') || []).forEach(($delete) => {
+                const $notification = $delete.parentNode;
+                
+                $delete.addEventListener('click', () => {
+                    $notification.parentNode.removeChild($notification);
+                });
+            });
+        });
+    </script>
+    
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

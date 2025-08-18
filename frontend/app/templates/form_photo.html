@@ -2,15 +2,14 @@
 
 {% block title %}Cargar Foto{% endblock %}
 
-
-
-
 {% block content %}
 <section class="section">
   <div class="container">
     <h1 class="title">Cargar Foto</h1>
 
     <form method="POST" action="{{ url_for('main.load_photo') }}" enctype="multipart/form-data">
+      
+      <!-- Nombre de la foto -->
       <div class="field">
         <label class="label">Nombre de la foto</label>
         <div class="control">
@@ -18,7 +17,7 @@
         </div>
       </div>
 
-
+      <!-- ID de usuario -->
       <div class="field">
         <label class="label">ID de usuario</label>
         <div class="control">
@@ -26,6 +25,7 @@
         </div>
       </div>
 
+      <!-- ID de carpeta -->
       <div class="field">
         <label class="label">ID de carpeta</label>
         <div class="control">
@@ -33,6 +33,7 @@
         </div>
       </div>
 
+      <!-- Selección de archivo -->
       <div class="field">
         <label class="label">Seleccionar archivo</label>
         <div class="file has-name is-boxed">
@@ -49,13 +50,28 @@
         </div>
       </div>
 
-
+      <!-- Botón submit -->
       <div class="field mt-5">
         <div class="control">
           <button class="button is-primary" type="submit">Cargar Foto</button>
         </div>
       </div>
+
     </form>
   </div>
 </section>
+
+  <script> 
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const fileInput = document.querySelector('.file-input');
+    const fileName = document.querySelector('.file-name');
+
+    fileInput.onchange = () => {
+      if (fileInput.files.length > 0) {
+        fileName.textContent = fileInput.files[0].name;
+      }
+    };
+  });
+</script>
 {% endblock %}

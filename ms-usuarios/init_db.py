@@ -12,10 +12,12 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 from app.core.security import get_password_hash
 # from app.services.user import validate_unique_user
 
+import logging
+
 def create_initial_user(db: Session):
     username = os.getenv("INITIAL_USER_USERNAME")
     if db.query(User).filter(User.username == username).first():
-        print("Usuario inicial ya existe")
+        logging.info("Usuario inicial ya existe")
         return
 
     
@@ -31,7 +33,7 @@ def create_initial_user(db: Session):
     )
     db.add(new_user)
     db.commit()
-    print("Usuario inicial creado")
+    logging.info("Usuario inicial creado")
 
 
 

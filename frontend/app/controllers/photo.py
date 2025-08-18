@@ -4,6 +4,8 @@ from app.services.photo import upload_photo_to_backend
 # from app.services.user_service import get_data_user
 import requests
 
+from flask import Response
+
 def form_photo():
     token = session.get("access_token")
 
@@ -35,3 +37,14 @@ def load_photo():
             flash(f'Error al subir la foto: {e}', 'danger')
 
     return redirect(url_for('main.form_photo'))
+
+
+def photo_proxy():
+    presigned_url = request.args.get("file")
+    # pedir a fastapi la presigned url
+    #r = requests.get(f"http://fastapi:8000/get_presigned?file={file_path}")
+    #presigned_url = r.json()["presigned_url"]
+
+    # ahora descargar el archivo desde minio
+    file_response = requests.get(presigned_url)
+    return Response(file_response.content, content_type=file_response.headers["Content-Type"])
