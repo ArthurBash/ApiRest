@@ -38,7 +38,7 @@
                 </a>
                 
                 {% if session.get('access_token') %}
-                    <a class="navbar-item" href="{{ url_for('main.form_photo') }}">
+                    <a class="navbar-item" href="{{ url_for('main.load_photo') }}">
                         <span class="icon">
                             <i class="fas fa-upload"></i>
                         </span>

@@ -190,6 +190,7 @@ async def upload_image_to_minio(user_id,file: UploadFile = File(...)):
 
     # Generar path aleatorio
     # folder = uuid4().hex[:8]      # ejemplo: '9a3b2f1d
+    print(f"-------------------{user_id}")
     user_id_int = decode_id(user_id)
     folder = f"usuario_{user_id_int}"
     filename = f"{file.filename}_{uuid4().hex}"

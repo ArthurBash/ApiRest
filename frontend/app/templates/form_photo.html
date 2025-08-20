@@ -7,6 +7,8 @@
   <div class="container">
     <h1 class="title">Cargar Foto</h1>
 
+    
+
     <form method="POST" action="{{ url_for('main.load_photo') }}" enctype="multipart/form-data">
       
       <!-- Nombre de la foto -->
@@ -17,19 +19,19 @@
         </div>
       </div>
 
-      <!-- ID de usuario -->
+      <!-- Select de carpetas -->
       <div class="field">
-        <label class="label">ID de usuario</label>
+        <label class="label">Carpeta</label>
         <div class="control">
-          <input class="input" type="text" name="user_id" placeholder="wbl2WeMN" required>
-        </div>
-      </div>
-
-      <!-- ID de carpeta -->
-      <div class="field">
-        <label class="label">ID de carpeta</label>
-        <div class="control">
-          <input class="input" type="text" name="folder_id" placeholder="AXQLDQLJ" required>
+          <div class="select is-fullwidth">
+            <select name="folder_id" required>
+              <option value="">Selecciona una carpeta</option>
+              {% for folder in folders %}
+                 console.
+                <option value="{{ folder.id }}">{{ folder.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -38,7 +40,7 @@
         <label class="label">Seleccionar archivo</label>
         <div class="file has-name is-boxed">
           <label class="file-label">
-            <input class="file-input" type="file" name="file" required>
+            <input class="file-input" type="file" name="file" accept="image/*" required>
             <span class="file-cta">
               <span class="file-icon">
                 <i class="fas fa-upload"></i>
@@ -47,6 +49,16 @@
             </span>
             <span class="file-name">Ningún archivo seleccionado</span>
           </label>
+        </div>
+      </div>
+
+      <!-- Preview de imagen -->
+      <div class="field" id="preview-container" style="display: none;">
+        <label class="label">Vista previa</label>
+        <div class="control">
+          <figure class="image is-256x256">
+            <img id="image-preview" alt="Vista previa de la imagen" style="object-fit: cover;">
+          </figure>
         </div>
       </div>
 
@@ -61,17 +73,39 @@
   </div>
 </section>
 
-  <script> 
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const fileInput = document.querySelector('.file-input');
+  const fileName = document.querySelector('.file-name');
+  const previewContainer = document.getElementById('preview-container');
+  const imagePreview = document.getElementById('image-preview');
 
-  document.addEventListener('DOMContentLoaded', () => {
-    const fileInput = document.querySelector('.file-input');
-    const fileName = document.querySelector('.file-name');
-
-    fileInput.onchange = () => {
-      if (fileInput.files.length > 0) {
-        fileName.textContent = fileInput.files[0].name;
+  fileInput.onchange = () => {
+    if (fileInput.files.length > 0) {
+      const file = fileInput.files[0];
+      
+      // Actualizar nombre del archivo
+      fileName.textContent = file.name;
+      
+      // Validar que sea una imagen
+      if (file.type.startsWith('image/')) {
+        // Mostrar preview
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          imagePreview.src = e.target.result;
+          previewContainer.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      } else {
+        // Ocultar preview si no es imagen
+        previewContainer.style.display = 'none';
+        fileName.textContent = file.name + ' (No es una imagen)';
       }
-    };
-  });
+    } else {
+      fileName.textContent = 'Ningún archivo seleccionado';
+      previewContainer.style.display = 'none';
+    }
+  };
+});
 </script>
 {% endblock %}

@@ -16,7 +16,6 @@ def upload_photo_to_backend(name, user_id, folder_id, token,file):
     }
 
     response = requests.post('http://ms-fotos/api/photo/', data=data, files=files, headers=headers)
-    response.raise_for_status()
     return response
 
 

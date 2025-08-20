@@ -106,7 +106,7 @@ def decode_id(hashid: str) -> int:
 
 def user_to_id_hasheado(user) -> UserRead:
     return UserRead(
-        id= encode_id(user.id),   
+        id = encode_id(user.id),   
         username = user.username,
         name = user.name,
         lastname= user.lastname,

@@ -38,3 +38,5 @@ def get_photos(user_id, token, skip=0, limit=10):
         return response.json(), None
     except requests.exceptions.RequestException as e:
         return None, str(e)
+
+

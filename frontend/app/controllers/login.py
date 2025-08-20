@@ -22,17 +22,16 @@ def login_view():
                 timeout=10  # Agregar timeout
             )
             
-            logging.info(f"Login response status: {response.status_code}")
-            logging.info(f"Login response: {response.text}")
+            logging.error(f"Login response status: {response.status_code}")
+            logging.error(f"Login response: {response.text}")
             
             if response.status_code == 200:
                 data = response.json()
-                
+              
                 # Guardar datos en session
                 session["access_token"] = data.get("access_token")
-                session["user_id"] = data.get("user_id", True)  # Marcar como logueado
+                session["user_id"] = str(data['user']['id'])
                 session["username"] = credentials.get("username")
-                session["email"] = data.get("email", credentials.get("username"))  # Email del usuario
                 
                 flash("Login exitoso", "success")
                 return redirect(url_for("main.dashboard_view"))
