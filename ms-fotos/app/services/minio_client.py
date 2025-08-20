@@ -17,146 +17,120 @@ def get_minio_client():
     return minio_client
 
 
-class PhotoService:
-    def __init__(self, minio_client: Minio, bucket_name: str):
-        self.minio_client = minio_client
-        self.bucket_name = bucket_name
+# class PhotoServiceMinio:
+#     def __init__(self, minio_client: Minio, bucket_name: str):
+#         self.minio_client = minio_client
+#         self.bucket_name = bucket_name
 
-    def generate_presigned_url(self, object_path: str, expires_hours: int = 1) -> str:
-        """Genera URL pre-firmada para acceso directo a MinIO"""
-        try:
-            url = self.minio_client.presigned_get_object(
-                bucket_name=self.bucket_name,
-                object_name=object_path,
-                expires=timedelta(hours=expires_hours)
-            )
-            return url
-        except Exception as e:
-            print(f"Error generando URL pre-firmada: {e}")
-            return ""
+#     def generate_presigned_url(self, object_path: str, expires_hours: int = 1) -> str:
+#         """Genera URL pre-firmada para acceso directo a MinIO"""
+#         try:
+#             url = self.minio_client.presigned_get_object(
+#                 bucket_name=self.bucket_name,
+#                 object_name=object_path,
+#                 expires=timedelta(hours=expires_hours)
+#             )
+#             return url
+#         except Exception as e:
+#             print(f"Error generando URL pre-firmada: {e}")
+#             return ""
 
-    def get_photos_by_folder(
-        self, 
-        db: Session,
-        user_id: int, 
-        folder_id: int, 
-        page: int = 1, 
-        page_size: int = 20
-    ) -> PhotoListResponse:
-        """Servicio para obtener fotos por folder"""
-        repo = PhotoRepository(db)
-        photos, total = repo.get_photos_by_folder(user_id, folder_id, page, page_size)
+#     def get_photos_by_folder(
+#         self, 
+#         db: Session,
+#         user_id: int, 
+#         folder_id: int, 
+#         page: int = 1, 
+#         page_size: int = 20
+#     ) -> PhotoListResponse:
+#         """Servicio para obtener fotos por folder"""
+#         repo = PhotoRepository(db)
+#         photos, total = repo.get_photos_by_folder(user_id, folder_id, page, page_size)
         
-        # Generar URLs pre-firmadas
-        photo_responses = []
-        for photo in photos:
-            signed_url = self.generate_presigned_url(photo.path)
-            photo_response = PhotoResponse(
-                id=photo.id,
-                name=photo.name,
-                path=photo.path,
-                user_id=photo.user_id,
-                folder_id=photo.folder_id,
-                date=photo.date,
-                signed_url=signed_url
-            )
-            photo_responses.append(photo_response)
+#         # Generar URLs pre-firmadas
+#         photo_responses = []
+#         for photo in photos:
+#             signed_url = self.generate_presigned_url(photo.path)
+#             photo_response = PhotoResponse(
+#                 id=photo.id,
+#                 name=photo.name,
+#                 path=photo.path,
+#                 user_id=photo.user_id,
+#                 folder_id=photo.folder_id,
+#                 date=photo.date,
+#                 signed_url=signed_url
+#             )
+#             photo_responses.append(photo_response)
         
-        has_next = (page * page_size) < total
+#         has_next = (page * page_size) < total
         
-        return PhotoListResponse(
-            photos=photo_responses,
-            total=total,
-            page=page,
-            page_size=page_size,
-            has_next=has_next
-        )
+#         return PhotoListResponse(
+#             photos=photo_responses,
+#             total=total,
+#             page=page,
+#             page_size=page_size,
+#             has_next=has_next
+#         )
 
-    def get_photos_by_user(
-        self, 
-        db: Session,
-        user_id: int, 
-        page: int = 1, 
-        page_size: int = 20
-    ) -> PhotoListResponse:
-        """Servicio para obtener todas las fotos de un usuario"""
-        repo = PhotoRepository(db)
-        photos, total = repo.get_photos_by_user(user_id, page, page_size)
+#     def get_photos_by_user(
+#         self, 
+#         db: Session,
+#         user_id: int, 
+#         page: int = 1, 
+#         page_size: int = 20
+#     ) -> PhotoListResponse:
+#         """Servicio para obtener todas las fotos de un usuario"""
+#         repo = PhotoRepository(db)
+#         photos, total = repo.get_photos_by_user(user_id, page, page_size)
         
-        # Generar URLs pre-firmadas
-        photo_responses = []
-        for photo in photos:
-            signed_url = self.generate_presigned_url(photo.path)
-            photo_response = PhotoResponse(
-                id=photo.id,
-                name=photo.name,
-                path=photo.path,
-                user_id=photo.user_id,
-                folder_id=photo.folder_id,
-                date=photo.date,
-                signed_url=signed_url
-            )
-            photo_responses.append(photo_response)
+#         # Generar URLs pre-firmadas
+#         photo_responses = []
+#         for photo in photos:
+#             signed_url = self.generate_presigned_url(photo.path)
+#             photo_response = PhotoResponse(
+#                 id=photo.id,
+#                 name=photo.name,
+#                 path=photo.path,
+#                 user_id=photo.user_id,
+#                 folder_id=photo.folder_id,
+#                 date=photo.date,
+#                 signed_url=signed_url
+#             )
+#             photo_responses.append(photo_response)
         
-        has_next = (page * page_size) < total
+#         has_next = (page * page_size) < total
         
-        return PhotoListResponse(
-            photos=photo_responses,
-            total=total,
-            page=page,
-            page_size=page_size,
-            has_next=has_next
-        )
+#         return PhotoListResponse(
+#             photos=photo_responses,
+#             total=total,
+#             page=page,
+#             page_size=page_size,
+#             has_next=has_next
+#         )
 
-    def get_single_photo(
-        self, 
-        db: Session,
-        photo_id: int, 
-        user_id: int
-    ) -> Optional[PhotoResponse]:
-        """Servicio para obtener una foto específica"""
-        repo = PhotoRepository(db)
-        photo = repo.get_photo_by_id(photo_id, user_id)
+#     def get_single_photo(
+#         self, 
+#         db: Session,
+#         photo_id: int, 
+#         user_id: int
+#     ) -> Optional[PhotoResponse]:
+#         """Servicio para obtener una foto específica"""
+#         repo = PhotoRepository(db)
+#         photo = repo.get_photo_by_id(photo_id, user_id)
         
-        if not photo:
-            return None
+#         if not photo:
+#             return None
         
-        signed_url = self.generate_presigned_url(photo.path)
+#         signed_url = self.generate_presigned_url(photo.path)
         
-        return PhotoResponse(
-            id=photo.id,
-            name=photo.name,
-            path=photo.path,
-            user_id=photo.user_id,
-            folder_id=photo.folder_id,
-            date=photo.date,
-            signed_url=signed_url
-        )
-
-
-
-# # Genera URLs presignadas
-# def get_presigned_urls(bucket: str, object_names: list[str], expiry: int = 3600):
-#     client = get_minio_client()
-#     return [
-#         client.presigned_get_object(bucket, obj, expires=expiry)
-#         for obj in object_names
-#     ]
-
-
-
-# def get_urls(bucket:str,user_id:str):
-#     from app.services.photo import decode_id
-#     client = get_minio_client()
+#         return PhotoResponse(
+#             id=photo.id,
+#             name=photo.name,
+#             path=photo.path,
+#             user_id=photo.user_id,
+#             folder_id=photo.folder_id,
+#             date=photo.date,
+#             signed_url=signed_url
+#         )
     
-#     # Listar archivos en la carpeta
-#     user_id_decode = decode_id(user_id)
-#     folder = f"usuario_{user_id_decode}"
-#     all_objects = client.list_objects(bucket, prefix=f"{folder}/", recursive=True)
-#     all_files = [obj.object_name for obj in all_objects]
-
-#     # Aplicar paginación
-#     selected_files = all_files[skip : skip + limit]
     
-#     # Devolver URLs presignadas
-#     return get_presigned_urls(bucket, selected_files)

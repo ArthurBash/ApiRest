@@ -82,7 +82,8 @@ def update_photo_put(photo_db: Photo, photo_in: PhotoUpdatePUT, db: Session):
     db.refresh(photo_db)
     return photo_db
 
-def delete_photo(photo_db: Photo,db: Session):
+def delete_photo(photo_db: Photo, db: Session):
+    # photo_service.delete_photo_from_minio(db,photo_db.path)
     db.delete(photo_db)
     db.commit()
 
@@ -112,30 +113,6 @@ def photo_to_id_hasheado(photo) -> PhotoRead:
         is_active = photo.is_active,
         date = photo.date
     )
-
-
-
-# async def upload_photo(file: UploadFile):
-#     try:
-#         content = await file.read()
-
-#         filename = f"{uuid.uuid4()}_{file.filename}"
-
-#         s3.put_object(
-#             Bucket=BUCKET_NAME,
-#             Key=filename,
-#             Body=content,
-#             ContentType=file.content_type
-#         )
-
-#         return {
-#             "message": "Imagen subida con éxito",
-#             "filename": filename,
-#             "url": f"http://{MINIO_ENDPOINT}/{BUCKET_NAME}/{filename}"
-#         }
-
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
 
 def create_photo_entry(db: Session, name: str, path: str, user_id: str, folder_id: str, is_active: bool):
     photo_in = PhotoCreate(
@@ -279,7 +256,7 @@ class PhotoService:
 
     def get_list_photos(
         self, 
-        db: Session,  # 👈 IMPORTANTE: necesitas recibir db aquí
+        db: Session,  
         user_id: int, 
         page: int = 1, 
         page_size: int = 20,
@@ -334,3 +311,16 @@ class PhotoService:
         """Wrapper para compatibilidad"""
         return self.get_list_photos(db, user_id, page, page_size, None)
 
+    
+ 
+
+    def delete_photo_from_minio(self, db: Session,object_path: str):
+        """Elimina un objeto del bucket de MinIO"""
+        try:
+            self.minio_client.remove_object(
+                bucket_name=self.bucket_name,
+                object_name=object_path
+            )
+            print(f"Archivo eliminado de MinIO: {object_path}")
+        except Exception as e:
+            print(f"Error al eliminar archivo de MinIO: {e}")

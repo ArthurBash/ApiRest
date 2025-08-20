@@ -5,7 +5,6 @@ from typing import Optional
 
 from sqlalchemy.orm import Session
 from typing import List
-# from app.services.minio_client import get_urls
 
 
 
@@ -52,12 +51,6 @@ def api_list_photos(
     return [photo_to_id_hasheado(p) for p in photos]
 
 
-# @router.get("/{photo_id}",response_model = PhotoRead)
-# def api_get_photo(photo_id: str = Path(...),db: Session =  Depends(get_db),token_valido = Depends(validate_token)):
-
-#     photo = get_existing_photo(photo_id,db)
-#     return photo_to_id_hasheado(photo)
-
 
 
 @router.put("/{photo_id}",response_model=PhotoRead)
@@ -84,8 +77,10 @@ def api_update_photo_patch(
 @router.delete("/{photo_id}", status_code=status.HTTP_204_NO_CONTENT)
 def api_delete_user(photo_db = Depends(get_existing_photo),  
     db: Session = Depends(get_db),
-    token_valido = Depends(validate_token)):
+    token_valido = Depends(validate_token),
+    photo_service: PhotoService = Depends(get_photo_service) ):
 
+    photo_service.delete_photo_from_minio(db,photo_db.path)
     delete_photo(photo_db,db)
 
 

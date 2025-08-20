@@ -26,21 +26,23 @@ def validate_token(credentials: HTTPAuthorizationCredentials = Depends(bearer_sc
     token = credentials.credentials
     return decode_access_token(token)
 
-def get_current_user(
-    token: str = Depends(oauth2_scheme),
-    ) -> str:
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="El token es invalido",
-        headers={"Authenticate": "Bearer"},
-    )
+
+def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)) -> str:
+    token = credentials.credentials
     payload = decode_access_token(token)
     if payload is None:
-        raise credentials_exception
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="El token es inválido",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
     user_id: str = payload.get("sub")
     if user_id is None:
-        raise credentials_exception
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="El token es inválido",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
-    user_id_docode = decode_id(user_id)
-    return user_id_docode
+    return decode_id(user_id)
