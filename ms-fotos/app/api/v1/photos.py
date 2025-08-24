@@ -94,7 +94,7 @@ async def upload_image(file: UploadFile = File(...)):
 
 @router.get("/photos")
 async def get_photos(
-    folder_id: Optional[int] = None,
+    folder_id: Optional[str] = Query(None, description="ID hasheado de la carpeta"),
     page: int = 1,
     page_size: int = 20,
     db: Session = Depends(get_db),

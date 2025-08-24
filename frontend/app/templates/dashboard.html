@@ -78,300 +78,194 @@
   .close-fullscreen:hover {
     opacity: 0.7;
   }
+
+  #photo-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
+  .photo-item { width: 100%; height: 200px; object-fit: cover; border-radius: 8px; cursor: pointer; transition: transform 0.3s ease; }
+  .photo-item:hover { transform: scale(1.05); }
+  #loading { text-align: center; padding: 20px; display: none; }
+  #fullscreen { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.9); align-items: center; justify-content: center; z-index: 1000; }
+  #fullscreen img { max-width: 90%; max-height: 90%; }
+  .close-fullscreen { position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; font-weight: bold; cursor: pointer; }
 </style>
 {% endblock %}
 
 {% block page_title %}
-<div class="level">
-  <div class="level-left">
-    <div class="level-item">
-      <h1 class="title">Galería de Fotos</h1>
-    </div>
-  </div>
-  <div class="level-right">
-    <div class="level-item">
-      <span class="tag is-info is-large">
-        <span class="icon">
-          <i class="fas fa-user"></i>
-        </span>
-        <span>{{ user.email or user.name or session.username }}</span>
-      </span>
-    </div>
-  </div>
-</div>
+<h1 class="title">Galería de Fotos</h1>
 {% endblock %}
 
 {% block content %}
-<!-- Verificar si el usuario está autenticado -->
 {% if session.get('access_token') %}
-  <!-- Filtros -->
   <div class="box">
     <div class="field">
       <label class="label" for="folder-select">
         <span class="icon-text">
-          <span class="icon">
-            <i class="fas fa-folder"></i>
-          </span>
+          <span class="icon"><i class="fas fa-folder"></i></span>
           <span>Filtrar por carpeta:</span>
         </span>
       </label>
       <div class="control">
-        <div class="select">
+        <div class="select is-fullwidth">
           <select id="folder-select">
             <option value="">Todas las fotos</option>
-            <!-- Aquí puedes cargar folders dinámicamente si tienes -->
-          </select>
+            </select>
         </div>
       </div>
     </div>
   </div>
-{% else %}
-  <!-- Mensaje para usuarios no autenticados -->
-  <div class="hero is-medium">
-    <div class="hero-body has-text-centered">
-      <div class="container">
-        <div class="columns is-centered">
-          <div class="column is-half">
-            <span class="icon is-large has-text-primary">
-              <i class="fas fa-lock fa-3x"></i>
-            </span>
-            <h1 class="title is-3 has-text-primary">
-              Acceso Requerido
-            </h1>
-            <p class="subtitle is-5">
-              Necesitas iniciar sesión para ver la galería de fotos
-            </p>
-            <div class="buttons is-centered">
-              <a href="{{ url_for('main.login_view') }}" class="button is-primary is-large">
-                <span class="icon">
-                  <i class="fas fa-sign-in-alt"></i>
-                </span>
-                <span>Iniciar Sesión</span>
-              </a>
-              <a href="{{ url_for('main.create_user') }}" class="button is-link is-large">
-                <span class="icon">
-                  <i class="fas fa-user-plus"></i>
-                </span>
-                <span>Crear Cuenta</span>
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-{% endif %}
-
-<!-- Contenedor de fotos (solo si está autenticado) -->
-{% if session.get('access_token') %}
+  
   <div id="photo-container"></div>
-
-  <!-- Indicador de carga -->
-  <div id="loading" class="has-text-centered">
-    <button class="button is-loading is-primary is-large">Loading</button>
-  </div>
-
-  <!-- Mensaje cuando no hay fotos -->
-  <div id="no-photos" class="no-photos" style="display: none;">
-    <div class="has-text-centered">
-      <span class="icon is-large has-text-grey-light">
-        <i class="fas fa-images fa-3x"></i>
-      </span>
-      <p class="title is-4 has-text-grey">No hay fotos para mostrar</p>
-      <p class="subtitle has-text-grey">
-        <a href="{{ url_for('main.load_photo') }}" class="button is-primary">
-          <span class="icon">
-            <i class="fas fa-upload"></i>
-          </span>
-          <span>Subir primera foto</span>
-        </a>
-      </p>
-    </div>
-  </div>
-
-  <!-- Modal fullscreen -->
+  <div id="loading"><button class="button is-loading is-large">Cargando</button></div>
+  <div id="no-photos" style="display: none;"><p>No hay fotos en esta carpeta.</p></div>
   <div id="fullscreen" onclick="closeFullscreen()">
-    <span class="close-fullscreen" onclick="closeFullscreen()">&times;</span>
+    <span class="close-fullscreen">&times;</span>
     <img id="fullscreen-img" />
   </div>
+{% else %}
+  <p>Debes iniciar sesión para ver la galería.</p>
 {% endif %}
 {% endblock %}
 
 {% block extra_js %}
 {% if session.get('access_token') %}
 <script>
-  // Variables globales disponibles desde Flask
-  const USER_ID = "{{ user_id }}";
-  const ACCESS_TOKEN = "{{ access_token }}";  // Token pasado desde Flask
-  
-  // Clase para manejar la galería
+  const ACCESS_TOKEN = "{{ access_token }}";
+
   class PhotoGallery {
     constructor() {
       this.currentPage = 1;
       this.pageSize = 20;
       this.hasNext = true;
       this.loading = false;
-      this.folderId = null;
+      this.folderId = '';
+      this.controller = new AbortController(); // Añadimos un AbortController para cancelar peticiones.
       
       this.photoContainer = document.getElementById('photo-container');
       this.loadingIndicator = document.getElementById('loading');
-      this.noPhotosMessage = document.getElementById('no-photos');
+      this.folderSelect = document.getElementById('folder-select');
       
       this.init();
     }
     
+    async loadFolders() {
+      try {
+        const response = await fetch('/api/folders', {
+          headers: { 'Authorization': `Bearer ${ACCESS_TOKEN}` }
+        });
+        if (!response.ok) throw new Error('Error al cargar carpetas');
+        
+        const folders = await response.json();
+        
+        folders.forEach(folder => {
+          const option = document.createElement('option');
+          option.value = folder.id;
+          option.textContent = folder.name;
+          this.folderSelect.appendChild(option);
+        });
+
+      } catch (error) {
+        console.error('Error fetching folders:', error);
+      }
+    }
+    
     async loadPhotos(reset = false) {
-      if (this.loading || !this.hasNext) return;
+      if (this.loading || (!this.hasNext && !reset)) return;
+      
+      // ✅ Clave 1: Si hay una carga en curso, la cancelamos antes de empezar una nueva.
+      if (this.loading) {
+        this.controller.abort();
+        this.controller = new AbortController();
+      }
+      
+      if (reset) {
+        this.photoContainer.innerHTML = '';
+        this.currentPage = 1;
+        this.hasNext = true;
+      }
       
       this.loading = true;
-      this.showLoading(true);
+      this.loadingIndicator.style.display = 'block';
       
-      // Construir parámetros
-      const params = new URLSearchParams({
-        page: reset ? 1 : this.currentPage,
-        page_size: this.pageSize
-      });
-      
+      const params = new URLSearchParams({ page: this.currentPage, page_size: this.pageSize });
       if (this.folderId) {
         params.append('folder_id', this.folderId);
       }
       
       try {
-        // Llamar a tu endpoint Flask que hace proxy a FastAPI
-        const response = await fetch(`/api/photos?${params}`, {
-          headers: {
-            'Authorization': `Bearer ${ACCESS_TOKEN}`,
-            'Content-Type': 'application/json'
-          }
+        const response = await fetch(`/api/photoss?${params}`, {
+          headers: { 'Authorization': `Bearer ${ACCESS_TOKEN}` },
+          signal: this.controller.signal // ✅ Clave 2: Le pasamos la señal de aborto a la petición.
         });
         
         const data = await response.json();
-        console.log(data)
+        
         if (response.ok) {
-          if (reset) {
-            this.photoContainer.innerHTML = ''; // Limpiar galería
-            this.currentPage = 1;
-          }
-          
-          this.displayPhotos(data.photos);
+          this.displayPhotos(data.photos); 
           this.hasNext = data.has_next;
           this.currentPage++;
-          
-          // Mostrar mensaje si no hay fotos
-          if (data.total === 0) {
-            this.noPhotosMessage.style.display = 'block';
-          } else {
-            this.noPhotosMessage.style.display = 'none';
-          }
-          
         } else {
-          console.error('Error loading photos:', data);
-          // Usar el sistema de notificaciones de Bulma
-          this.showNotification(data.error || 'Error al cargar fotos', 'is-danger');
+          console.error('Error al cargar fotos:', data.error);
         }
         
       } catch (error) {
-        console.error('Network error:', error);
-        this.showNotification('Error de conexión', 'is-danger');
+          if (error.name === 'AbortError') {
+              console.log('La petición fue cancelada. Esto es normal.');
+          } else {
+              console.error('Error de red:', error);
+          }
       } finally {
         this.loading = false;
-        this.showLoading(false);
+        this.loadingIndicator.style.display = 'none';
       }
     }
     
     displayPhotos(photos) {
+      const noPhotosMessage = document.getElementById('no-photos');
+      if (photos.length === 0 && this.currentPage === 1) {
+        noPhotosMessage.style.display = 'block';
+      } else {
+        noPhotosMessage.style.display = 'none';
+      }
+
       photos.forEach(photo => {
-        // Crear card de Bulma para cada foto
-        const cardDiv = document.createElement('div');
-        cardDiv.classList.add('card');
-        
-        const cardImageDiv = document.createElement('div');
-        cardImageDiv.classList.add('card-image');
-        
-        const figure = document.createElement('figure');
-        figure.classList.add('image');
-        
         const imgElement = document.createElement('img');
         imgElement.src = `/photo_proxy?file=${encodeURIComponent(photo.signed_url)}`;
         imgElement.alt = photo.name;
         imgElement.classList.add('photo-item');
-        imgElement.loading = 'lazy';
-        
-        // Click para fullscreen
         imgElement.onclick = () => {
           document.getElementById('fullscreen-img').src = `/photo_proxy?file=${encodeURIComponent(photo.signed_url)}`;
           document.getElementById('fullscreen').style.display = 'flex';
         };
-        
-        figure.appendChild(imgElement);
-        cardImageDiv.appendChild(figure);
-        cardDiv.appendChild(cardImageDiv);
-        
-        this.photoContainer.appendChild(cardDiv);
+        this.photoContainer.appendChild(imgElement);
       });
     }
     
-    showLoading(show) {
-      this.loadingIndicator.style.display = show ? 'block' : 'none';
-    }
-    
-    showNotification(message, type = 'is-info') {
-      // Crear notificación de Bulma
-      const notification = document.createElement('div');
-      notification.classList.add('notification', type);
-      notification.innerHTML = `
-        <button class="delete"></button>
-        ${message}
-      `;
-      
-      // Insertar al principio del contenido
-      const container = document.querySelector('.container');
-      container.insertBefore(notification, container.firstChild);
-      
-      // Agregar funcionalidad de cerrar
-      notification.querySelector('.delete').onclick = () => {
-        notification.remove();
-      };
-      
-      // Auto-cerrar después de 5 segundos
-      setTimeout(() => {
-        if (notification.parentNode) {
-          notification.remove();
-        }
-      }, 5000);
+    setupFolderFilter() {
+      this.folderSelect.addEventListener('change', (e) => {
+        this.folderId = e.target.value;
+        this.loadPhotos(true);
+      });
     }
     
     setupInfiniteScroll() {
       window.addEventListener('scroll', () => {
-        if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 1000) {
+        if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500) {
           this.loadPhotos();
         }
       });
     }
     
-    setupFolderFilter() {
-      const folderSelect = document.getElementById('folder-select');
-      folderSelect.addEventListener('change', (e) => {
-        this.folderId = e.target.value || null;
-        this.currentPage = 1;
-        this.hasNext = true;
-        this.loadPhotos(true); // Reset y cargar
-      });
-    }
-    
-    init() {
-      this.setupInfiniteScroll();
+    async init() {
+      await this.loadFolders();
       this.setupFolderFilter();
-      this.loadPhotos(); // Carga inicial
+      this.setupInfiniteScroll();
+      this.loadPhotos();
     }
   }
   
-  // Funciones globales
   function closeFullscreen() {
     document.getElementById('fullscreen').style.display = 'none';
   }
   
-  // Inicializar galería cuando carga la página
   document.addEventListener('DOMContentLoaded', () => {
     new PhotoGallery();
   });

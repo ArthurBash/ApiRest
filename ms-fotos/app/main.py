@@ -3,7 +3,7 @@
 from fastapi import FastAPI
 from app.db.session import engine
 from app.db.base import Base
-from app.api.v1 import photos
+from app.api.v1 import photos,folders
 
 app = FastAPI(title="Microservicio de fotos")
 
@@ -14,4 +14,5 @@ def create_schema():
 
 # Incluimos el router
 app.include_router(photos.router)
+app.include_router(folders.router)
 # register_exception_handlers(app)  # si vuelves a habilitar tus handlers

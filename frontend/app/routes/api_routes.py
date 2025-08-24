@@ -1,25 +1,30 @@
 from flask import Blueprint
 from app.controllers.login import login_view
-from app.controllers.dashboard import dashboard_view, logout_view,get_single_photo_endpoint,get_photos_endpoint
-from app.controllers.users import users_view,get_current_user_endpoint
-from app.controllers.photo import load_photo,photo_proxy
+from app.controllers.dashboard import dashboard_view, logout_view, get_single_photo_endpoint, get_photos_endpoint
+from app.controllers.users import users_view, get_current_user_endpoint
+from app.controllers.photo import load_photo, photo_proxy, proxy_get_folders, proxy_get_photos
 from app.controllers.create_user import create_user
 
 main = Blueprint("main", __name__)
 
-main.route("/", methods=["GET", "POST"])(login_view)
-main.route("/dashboard")(dashboard_view)
-main.route("/logout")(logout_view)
-main.route("/users")(users_view)
-main.route("/create_user")(create_user)
+# --- Rutas de Vistas (Páginas) ---
+# Usando add_url_rule para mantener la consistencia
+main.add_url_rule("/", view_func=login_view, methods=["GET", "POST"])
+main.add_url_rule("/dashboard", view_func=dashboard_view, methods=["GET"])
+main.add_url_rule("/logout", view_func=logout_view, methods=["GET"])
+main.add_url_rule("/users", view_func=users_view, methods=["GET"])
+main.add_url_rule("/create_user", view_func=create_user, methods=["GET", "POST"]) # Asumiendo GET y POST
 main.add_url_rule("/load_photo", view_func=load_photo, methods=["GET", "POST"])
 
-# main.route("/form_photo")(form_photo)
+# --- Rutas de API y Proxies ---
+main.add_url_rule("/api/photos", view_func=get_photos_endpoint, methods=["GET"])
+main.add_url_rule("/api/photos/<int:photo_id>", view_func=get_single_photo_endpoint, methods=["GET"])
+main.add_url_rule("/api/current-user", view_func=get_current_user_endpoint, methods=["GET"])
 
-# main.route("/load_photo",methods=["POST"])(load_photo)
+# Rutas del proxy
+main.add_url_rule("/photo_proxy", view_func=photo_proxy, methods=["GET"])
 
-main.route("/api/photos", methods=["GET"])(get_photos_endpoint)
-main.route("/api/photos/<int:photo_id>", methods=["GET"])(get_single_photo_endpoint)
+main.add_url_rule("/api/folders", view_func=proxy_get_folders, methods=["GET"])
 
-main.route("/api/current-user")(get_current_user_endpoint)
-main.route("/photo_proxy")(photo_proxy)
+# ❗️ OJO: Corregí el error tipográfico de "photoo" a "photos" para que coincida con tu JS
+main.add_url_rule("/api/photoss", view_func=proxy_get_photos, methods=["GET"]) 

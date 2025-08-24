@@ -3,7 +3,68 @@ import requests
 
 import os
 from typing import Optional, Dict, Any
-from flask import current_app
+from flask import current_app,session
+import logging
+
+
+def get_folders_from_api():
+    """
+    Función que obtiene las carpetas desde la API FastAPI
+    """
+    try:
+        access_token = session.get("access_token")
+        if not access_token:
+            logging.error("No se encontró token de acceso")
+            return []
+
+        # URL de tu API FastAPI
+        api_url = "http://ms-fotos/api/photo/folders"  
+        
+        # Headers con autenticación
+        headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json"
+        }
+        
+        params = {
+            "skip": 0,
+            "limit": 100  
+        }
+        
+        # Hace la petición
+        response = requests.get(api_url, headers=headers, params=params, timeout=10)
+        
+        if response.status_code == 200:
+            folders_data = response.json()
+            
+            folders = []
+            for folder in folders_data:
+                folders.append({
+                    "id": folder["id"],          
+                    "name": folder["name"],     
+                    "path": folder.get("path", ""),
+                    "is_active": folder.get("is_active", True)
+                })
+            
+            logging.info(f"Se obtuvieron {len(folders)} carpetas desde la API")
+            return folders
+            
+        elif response.status_code == 401:
+            logging.error("Token de acceso inválido o expirado")
+            return []
+        elif response.status_code == 403:
+            logging.error("No tienes permisos para acceder a las carpetas")
+            return []
+        else:
+            logging.error(f"Error al obtener carpetas: {response.status_code} - {response.text}")
+            return []
+            
+    except requests.RequestException as e:
+        logging.error(f"Error de conexión al obtener carpetas: {e}")
+        return []
+    except Exception as e:
+        logging.error(f"Error inesperado al obtener carpetas: {e}")
+        return []
 
 def upload_photo_to_backend(name, user_id, folder_id, token,file):
     headers = {"Authorization": f"Bearer {token}"}

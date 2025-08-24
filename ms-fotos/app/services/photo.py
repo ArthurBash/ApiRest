@@ -13,12 +13,10 @@ from minio import Minio
 from app.exceptions import ErrorDecodificacion,ErrorFotoNoEncontrada
 #from passlib.context import CryptContext
 
-from hashids import Hashids
-import os
-from dotenv import load_dotenv
-
+from app.utils import encode_id,decode_id
 from fastapi.responses import StreamingResponse
-
+import os
+from app.models.folder import Folder
 
 #s3
 
@@ -87,21 +85,7 @@ def delete_photo(photo_db: Photo, db: Session):
     db.delete(photo_db)
     db.commit()
 
-load_dotenv() 
 
-HASHIDS_SALT = os.getenv("HASHIDS_SALT", "valor_por_defecto_no_conveniente")
-HASHIDS_MIN_LENGTH = int(os.getenv("HASHIDS_MIN_LENGTH", 8))
-
-hashids = Hashids(salt=HASHIDS_SALT, min_length=HASHIDS_MIN_LENGTH)
-
-def encode_id(id: int) -> str:
-    return hashids.encode(id)
-
-def decode_id(hashid: str) -> int:
-    decoded = hashids.decode(hashid)
-    if decoded:
-        return decoded[0]
-    raise ValueError("ID inválido")
 
 def photo_to_id_hasheado(photo) -> PhotoRead:
     return PhotoRead(
@@ -115,6 +99,19 @@ def photo_to_id_hasheado(photo) -> PhotoRead:
     )
 
 def create_photo_entry(db: Session, name: str, path: str, user_id: str, folder_id: str, is_active: bool):
+    # Buscar la carpeta por ID
+    folder = db.query(Folder).filter(
+        Folder.id == decode_id(folder_id),
+        Folder.is_active == True
+    ).first()
+    
+    # Si no existe la carpeta, lanzar error
+    if not folder:
+        raise HTTPException(
+            status_code=404, 
+            detail=f"Folder con ID {folder_id} No fue encontrado o no esta activo"
+        )
+    
     photo_in = PhotoCreate(
         name=name,
         path=path,
@@ -122,8 +119,11 @@ def create_photo_entry(db: Session, name: str, path: str, user_id: str, folder_i
         folder_id=folder_id,
         is_active=is_active
     )
+    
     photo = create_photo(db, photo_in)
+    
     return photo
+
 
 def create_photo(db: Session, photo_in: PhotoCreate):
     user_id_int = decode_id(photo_in.user_id)      
@@ -144,53 +144,12 @@ def create_photo(db: Session, photo_in: PhotoCreate):
     return db_photo
 
 
-def descargar_archivos_de_usuario(
-    db: Session,
-    bucket_name: str,
-    user_id: str,
-    destino_local: str = "/tmp/fotos"
-):
-    client = get_minio_client()
-
-    # Fotos de ese usuario
-    fotos = db.query(Photo).filter(Photo.user_id == user_id).all()
-    if not fotos:
-        return []
-
-    # Obtener prefijos
-    prefijos = set()
-    for foto in fotos:
-        prefijo = os.path.dirname(foto.path).lstrip("/") + "/"  # quitar '/' inicial
-        prefijos.add(prefijo)
-
-    archivos_descargados = []
-
-    for prefijo in prefijos:
-        objetos = client.list_objects(bucket_name, prefix=prefijo, recursive=True)
-        for obj in objetos:
-            relative_path = obj.object_name[len(prefijo):]
-            ruta_local = os.path.join(destino_local, prefijo, relative_path)
-            os.makedirs(os.path.dirname(ruta_local), exist_ok=True)
-            client.fget_object(bucket_name, obj.object_name, ruta_local)
-            archivos_descargados.append(obj.object_name)
-
-    return archivos_descargados
-
-
 
 
 async def upload_image_to_minio(user_id,file: UploadFile = File(...)):
     if not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="Archivo no es una imagen válida")
 
-#    # Validación de tamaño
-#     if file.content_type > 5 * 1024 * 1024:  # 5MB
-#         raise HTTPException(status_code=400, detail="Archivo demasiado grande")
-
-
-    # Generar path aleatorio
-    # folder = uuid4().hex[:8]      # ejemplo: '9a3b2f1d
-    print(f"-------------------{user_id}")
     user_id_int = decode_id(user_id)
     folder = f"usuario_{user_id_int}"
     filename = f"{file.filename}_{uuid4().hex}"
@@ -215,17 +174,6 @@ async def upload_image_to_minio(user_id,file: UploadFile = File(...)):
 
     return path
 
-def descargar_fotos_usuarios(user_id):
-    id_real = decode_id(photo_id)
-    foto = db.query(Photo).filter(Photo.id == id_real).first()
-    if not foto:
-        raise HTTPException(status_code=404, detail="Foto no encontrada")
-    return stream_photo_from_minio("fotos",foto.path.lstrip("/"))
-
-def stream_photo_from_minio(bucket_name: str, object_name: str):
-    client = get_minio_client()
-    response = client.get_object(bucket_name, object_name)
-    return StreamingResponse(response, media_type="image/jpeg")  # o detectarlo dinámicamente
 
 
 
@@ -234,6 +182,13 @@ def stream_photo_from_minio(bucket_name: str, object_name: str):
 from minio import Minio
 from datetime import timedelta
 from typing import Optional
+from app.schemas.photo import PhotoResponse, PhotoListResponse
+from app.repositories.photo_repository import PhotoRepository
+
+from minio import Minio
+from datetime import timedelta
+from typing import Optional
+from sqlalchemy.orm import Session
 from app.schemas.photo import PhotoResponse, PhotoListResponse
 from app.repositories.photo_repository import PhotoRepository
 
@@ -261,17 +216,26 @@ class PhotoService:
         user_id: int, 
         page: int = 1, 
         page_size: int = 20,
-        folder_id: Optional[int] = None  #
+        folder_id: Optional[str] = None  # Cambio: ahora es str (hasheado)
     ) -> PhotoListResponse:
         """
         Método unificado que decide si traer por folder o por usuario
         """
-        # Crear el repository con la sesión de BD
         repo = PhotoRepository(db)
         
-        # Decidir qué método usar según si hay folder_id
         if folder_id is not None:
-            photos, total = repo.get_photos_by_folder(user_id, folder_id, page, page_size)
+            try:
+                folder_id_int = decode_id(folder_id)
+            except Exception:
+                return PhotoListResponse(
+                    photos=[],
+                    total=0,
+                    page=page,
+                    page_size=page_size,
+                    has_next=False
+                )
+            
+            photos, total = repo.get_photos_by_folder(user_id, folder_id_int, page, page_size)
         else:
             photos, total = repo.get_photos_by_user(user_id, page, page_size)
         
@@ -303,19 +267,16 @@ class PhotoService:
             has_next=has_next
         )
 
-    # Mantén los métodos específicos si los necesitas en otros lugares
-    def get_photos_by_folder(self, db: Session, user_id: int, folder_id: int, page: int = 1, page_size: int = 20):
-        """Wrapper para compatibilidad"""
+    # Wrappers actualizados para manejar folder_id hasheado
+    def get_photos_by_folder(self, db: Session, user_id: int, folder_id: str, page: int = 1, page_size: int = 20):
+        """Wrapper para compatibilidad - ahora recibe folder_id hasheado"""
         return self.get_list_photos(db, user_id, page, page_size, folder_id)
 
     def get_photos_by_user(self, db: Session, user_id: int, page: int = 1, page_size: int = 20):
         """Wrapper para compatibilidad"""
         return self.get_list_photos(db, user_id, page, page_size, None)
 
-    
- 
-
-    def delete_photo_from_minio(self, db: Session,object_path: str):
+    def delete_photo_from_minio(self, db: Session, object_path: str):
         """Elimina un objeto del bucket de MinIO"""
         try:
             self.minio_client.remove_object(

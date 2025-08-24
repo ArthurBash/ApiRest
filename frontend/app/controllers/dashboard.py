@@ -1,7 +1,7 @@
 from flask import session, redirect, url_for, flash, render_template
 from app.services.user_service import get_data_user,get_photos
 from app.services.photo import PhotoAPIService
-from flask import session, request, jsonify
+from flask import request, jsonify
 
 photo_api_service = PhotoAPIService()
 
