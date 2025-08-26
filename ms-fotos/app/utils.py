@@ -2,6 +2,7 @@ from hashids import Hashids
 import os
 from dotenv import load_dotenv
 
+from app.exceptions import DecodingError
 load_dotenv() 
 
 HASHIDS_SALT = os.getenv("HASHIDS_SALT", "valor_por_defecto_no_conveniente")
@@ -16,4 +17,4 @@ def decode_id(hashid: str) -> int:
     decoded = hashids.decode(hashid)
     if decoded:
         return decoded[0]
-    raise ValueError("ID inválido")
+    raise DecodingError()

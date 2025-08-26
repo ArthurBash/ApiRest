@@ -5,6 +5,9 @@ from sqlalchemy import and_
 from typing import List, Optional, Tuple
 from app.models.photo import Photo
 
+
+from app.exceptions import PhotoNotFoundError, PhotoUpdateError, DatabaseError
+
 class PhotoRepository:
     def __init__(self, db: Session):
         self.db = db
@@ -51,7 +54,7 @@ class PhotoRepository:
         
         return photos, total
 
-    def get_photo_by_id(self, photo_id: int, user_id: int) -> Optional[Photo]:
+    def get_photo_user_by_id(self, photo_id: int, user_id: int) -> Optional[Photo]:
         """Obtiene una foto específica por ID (verificando ownership)"""
         return self.db.query(Photo).filter(
             and_(
@@ -61,5 +64,7 @@ class PhotoRepository:
             )
         ).first()
 
+
+    
     
     

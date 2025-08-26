@@ -10,7 +10,7 @@ from app.schemas.photo import PhotoUpdate, PhotoUpdatePUT
 from minio import Minio
 
 
-from app.exceptions import ErrorDecodificacion,ErrorFotoNoEncontrada
+from app.exceptions import DecodingError,PhotoNotFoundError,FileNotValidate,FolderNotFoundError
 #from passlib.context import CryptContext
 
 from app.utils import encode_id,decode_id
@@ -33,15 +33,12 @@ def get_list(db,skip,limit):
 
 
 def get_existing_photo(photo_id: str = Path(...), db: Session = Depends(get_db)):
-    try:
-        decoded_id = decode_id(photo_id)
-    except Exception:
-        raise ErrorDecodificacion()
-
+    decoded_id = decode_id(photo_id)
+    
     photo = db.query(Photo).filter_by(id=decoded_id).first()
 
     if not photo:
-        raise ErrorFotoNoEncontrada()
+        raise PhotoNotFoundError()
     return photo
 
 
@@ -98,20 +95,18 @@ def photo_to_id_hasheado(photo) -> PhotoRead:
         date = photo.date
     )
 
-def create_photo_entry(db: Session, name: str, path: str, user_id: str, folder_id: str, is_active: bool):
+def create_photo_entry(db: Session, name: str, user_id: str, folder_id: str, is_active: bool,user_id,file: UploadFile = File(...)):
+    path = upload_image_to_minio(user_id,file)
+    
     # Buscar la carpeta por ID
     folder = db.query(Folder).filter(
         Folder.id == decode_id(folder_id),
         Folder.is_active == True
     ).first()
     
-    # Si no existe la carpeta, lanzar error
     if not folder:
-        raise HTTPException(
-            status_code=404, 
-            detail=f"Folder con ID {folder_id} No fue encontrado o no esta activo"
-        )
-    
+        raise FolderNotFoundError(folder_id=folder_id)
+       
     photo_in = PhotoCreate(
         name=name,
         path=path,
@@ -147,8 +142,10 @@ def create_photo(db: Session, photo_in: PhotoCreate):
 
 
 async def upload_image_to_minio(user_id,file: UploadFile = File(...)):
+
+
     if not file.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="Archivo no es una imagen válida")
+        raise FileNotValidate()
 
     user_id_int = decode_id(user_id)
     folder = f"usuario_{user_id_int}"
@@ -159,7 +156,6 @@ async def upload_image_to_minio(user_id,file: UploadFile = File(...)):
 
 
     minio_client = get_minio_client()
-    # Subir a MinIO
     minio_client.put_object(
         bucket_name,
         path,
@@ -168,9 +164,6 @@ async def upload_image_to_minio(user_id,file: UploadFile = File(...)):
         part_size=5 * 1024 * 1024,
         content_type=file.content_type
     )
-
-    # Registrar path en tu modelo/PostgreSQL
-    # insert_path_to_db(path)  <-- ya lo tenés funcionando
 
     return path
 
