@@ -1,12 +1,22 @@
 #!/bin/bash
-set -e  # salir si algún comando falla
+set -e
+
+
+# echo "Creando nueva migracion..."
+# alembic revision --autogenerate -m "Añadir tabla de Usuarios"
+
+echo "Aplicando las migraciones..."
+alembic upgrade head
+
+echo "Esperando aplicaciones... ...."
+sleep 5
 
 echo "Ejecutando script de inicialización..."
 python init_db.py
 
 echo "Iniciando servidor Uvicorn..."
-exec uvicorn app.main:app --host 0.0.0.0 --port 80 --reload
-
-# TODO fijarse como hacer para hacer solo roload cuando esta en development 
-# TODO fijarse de agrega rla creacion de un  env.secret_key por uno fuerte y seguro. random
-
+if [ "$ENVIRONMENT" = "development" ]; then
+    exec uvicorn app.main:app --host 0.0.0.0 --port 80 --reload
+else
+    exec uvicorn app.main:app --host 0.0.0.0 --port 80
+fi

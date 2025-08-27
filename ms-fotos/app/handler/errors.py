@@ -1,56 +1,62 @@
-from fastapi import Request
+from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from fastapi.exceptions import RequestValidationError
-from starlette.status import HTTP_422_UNPROCESSABLE_ENTITY,HTTP_404_NOT_FOUND,HTTP_400_BAD_REQUEST
-from fastapi import FastAPI
-from app.exceptions import DecodingError,PhotoNotFoundError,FileNotValidate,FolderNotFoundError
+from starlette.status import HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND
+from app.exceptions import BaseCustomException, DecodingError, PhotoNotFoundError, FileNotValidate, FolderNotFoundError
 
 def register_exception_handlers(app: FastAPI):
 
-    @app.exception_handler(RequestValidationError)
-    async def validation_exception_handler(request: Request, exc: RequestValidationError):
-        errors = exc.errors()
-        error_messages = []
-        for err in errors:
-            loc = " -> ".join(str(x) for x in err['loc'])
-            msg = err['msg']
-            error_messages.append(f"Error en {loc}: {msg}")
-
+    # Handler base    
+    @app.exception_handler(BaseCustomException)
+    def base_custom_exception_handler(request: Request, exc: BaseCustomException):
         return JSONResponse(
-            status_code=HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=HTTP_400_BAD_REQUEST,
             content={
-                "detail": "No pasó las validaciones requeridas.",
-                "errors": error_messages,
+                "detail": exc.message,
+                "success": False,
+                **getattr(exc, "extra_data", {})
             },
         )
+
     @app.exception_handler(DecodingError)
-    async def error_decodificacion(request: Request, exc: DecodingError):
+    def decoding_error_handler(request: Request, exc: DecodingError):
         return JSONResponse(
             status_code=HTTP_404_NOT_FOUND,
-            content={"detail": "Error en la decodificacion"},
+            content={
+                "detail": "Error en la decodificación",
+                "success": False,
+                **getattr(exc, "extra_data", {})
+            },
         )
-    
+
     @app.exception_handler(PhotoNotFoundError)
-    async def error_foto_no_encontrada(request: Request, exc: PhotoNotFoundError):
+    def photo_not_found_handler(request: Request, exc: PhotoNotFoundError):
         return JSONResponse(
             status_code=HTTP_404_NOT_FOUND,
-            content={"detail": "Foto no encontrada"},
+            content={
+                "detail": "Foto no encontrada",
+                "success": False,
+                **getattr(exc, "extra_data", {})
+            },
         )
 
     @app.exception_handler(FileNotValidate)
-    async def error_imagen_no_valida(request: Request, exc: FileNotValidate):
+    def file_not_valid_handler(request: Request, exc: FileNotValidate):
         return JSONResponse(
             status_code=HTTP_400_BAD_REQUEST,
-            content={"detail": "Archivo no es una imagen válida"},
+            content={
+                "detail": "Archivo no es una imagen válida",
+                "success": False,
+                **getattr(exc, "extra_data", {})
+            },
         )
 
     @app.exception_handler(FolderNotFoundError)
-    async def error_carpeta_no_encontrada(request: Request, exc: FolderNotFoundError):
+    def folder_not_found_handler(request: Request, exc: FolderNotFoundError):
         return JSONResponse(
             status_code=HTTP_404_NOT_FOUND,
-            content={"detail": f"Folder con ID {exc.folder_id} no fue encontrado o no está activo"},
+            content={
+                "detail": f"Folder con ID {exc.folder_id} no fue encontrado o no está activo",
+                "success": False,
+                **getattr(exc, "extra_data", {})
+            },
         )
-
-
-
-

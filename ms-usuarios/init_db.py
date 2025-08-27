@@ -1,44 +1,40 @@
 import os
-from sqlalchemy.orm import Session
-from app.models.user import User
-from app.db.base import Base
-
-from app.api.deps import get_db
-from app.db.session import engine
-from passlib.context import CryptContext
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-from app.core.security import get_password_hash
-# from app.services.user import validate_unique_user
-
 import logging
+from app.repositories.user_repository import UserRepository
+from app.schemas.user_schemas import UserCreate
+from app.services.user_service import UserService
+from app.utils.deps import get_db
 
-def create_initial_user(db: Session):
-    username = os.getenv("INITIAL_USER_USERNAME")
-    if db.query(User).filter(User.username == username).first():
-        logging.info("Usuario inicial ya existe")
-        return
+def create_initial_user():
+    # Obtener sesión de DB
+    db_gen = get_db()
+    db = next(db_gen)
+    try:
+        user_repository = UserRepository(db)
+        user_service = UserService(user_repository)
 
-    
+        username = os.getenv("INITIAL_USER_USERNAME")
+        email = os.getenv("INITIAL_USER_EMAIL")
 
-    hashed_password = get_password_hash(os.getenv("INITIAL_USER_PASSWORD"))
+        existing_user = user_repository.get_by_username_or_email(username)
+        if existing_user:
+            logging.info("Usuario inicial ya existe")
+            return
 
-    new_user = User(
-        name=os.getenv("INITIAL_USER_NAME"),
-        lastname=os.getenv("INITIAL_USER_LASTNAME"),
-        username=username,
-        hashed_password=hashed_password,
-        email=os.getenv("INITIAL_USER_EMAIL"),
-    )
-    db.add(new_user)
-    db.commit()
-    logging.info("Usuario inicial creado")
+        # Crear usuario inicial
+        user_data = UserCreate(
+            name=os.getenv("INITIAL_USER_NAME"),
+            lastname=os.getenv("INITIAL_USER_LASTNAME"),
+            username=username,
+            password=os.getenv("INITIAL_USER_PASSWORD"),
+            email=email,
+        )
 
-
+        user_service.create_user(user_data)
+        logging.info("Usuario inicial creado")
+    finally:
+        db.close()
 
 
 if __name__ == "__main__":
-    Base.metadata.create_all(bind=engine)  # crea tablas
-    db = next(get_db())
-    create_initial_user(db)
+    create_initial_user()

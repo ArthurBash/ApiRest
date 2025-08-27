@@ -1,65 +1,50 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime
-from app.db.base import Base
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
-from typing import List, Optional
+from typing import Optional
 
 
-
-# Pydantic Models (API Schemas)
 class PhotoBase(BaseModel):
-    name: str = Field(..., example="vacaciones_2023.jpg")
-    path: str = Field(..., example="/uploads/user1/vacaciones.jpg")
-    user_id: str = Field(..., example="wbl2WeMN")
-    folder_id: str = Field(..., example="AXQLDQLJ")
-    date: datetime = Field(default_factory=datetime.utcnow)
-    is_active: Optional[bool] = Field(None, example=False)
+    name: str = Field(..., min_length=1, max_length=255, description="Nombre de la foto")
+    user_id: int = Field(..., gt=0, description="ID del usuario")
+    folder_id: str = Field(..., description="ID hasheado de la carpeta")
+
 
 class PhotoCreate(PhotoBase):
-    pass 
+    """Schema para crear foto"""
+    pass
 
 
 class PhotoUpdate(BaseModel):
-    name: Optional[str] = Field(default=None)
-    path: Optional[str] = Field(default=None)
-    user_id: Optional[str] = Field(default=None)
-    folder_id: Optional[str] = Field(default=None)
-    is_active: Optional[bool] = Field(default=None)
-
-class PhotoUpdatePUT(BaseModel):
-    name: str
-    path: str
-    user_id: str
-    folder_id: str
-    is_active: bool
-
-
-class PhotoRead(PhotoBase):
-
-    id: str 
-    user_id: str
-    folder_id: str
-
-    model_config = {
-        "from_attributes": True
-    }
+    """Schema para actualizar foto"""
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
+    user_id: Optional[int] = Field(None, gt=0)
+    folder_id: Optional[str] = Field(None, description="ID hasheado de la carpeta")
+    is_active: Optional[bool] = None
 
 
 class PhotoResponse(BaseModel):
-    id: int
+    """Schema para respuesta de foto"""
+    model_config = ConfigDict(from_attributes=True)
+    
+    id: str  # ID hasheado
     name: str
     path: str
     user_id: int
-    folder_id: int
+    folder_id: str  # ID hasheado
     date: datetime
-    signed_url: str  # URL pre-firmada de MinIO
+    is_active: bool
 
-    class Config:
-        from_attributes = True
-    
-class PhotoListResponse(BaseModel):
-    photos: List[PhotoResponse]
-    total: int
-    page: int
-    page_size: int
-    has_next: bool
+
+class PhotoUploadResponse(PhotoResponse):
+    """Schema para respuesta de upload con URL"""
+    upload_success: bool = True
+    message: str = "Foto subida correctamente"
+
+
+class PhotoPresignedUrlResponse(BaseModel):
+    """Schema para URL pre-firmada"""
+    photo_id: str
+    url: str
+    expires_in: int
+    message: str = "URL generada correctamente"
+

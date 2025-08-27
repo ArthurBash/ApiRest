@@ -1,103 +1,170 @@
-from fastapi import APIRouter, Depends, status
-from sqlalchemy.orm import Session
+import uuid
 from typing import List
 
-from app.schemas.user import UserCreate, UserRead, UserUpdate,UserUpdatePUT
-from app.models.user import User
-from app.services.user import (
-    create_user, get_user, get_user_by_username,get_users,
-    update_user_patch,update_user_put,delete_user,get_user_by_email,
-    validate_unique_user,user_to_id_hasheado)
-from app.api.deps import get_db,get_existing_user
-from fastapi import HTTPException
+from fastapi import APIRouter, Depends, Query, Path, status
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi import Security
 
-from app.core.security import authenticate_user,create_access_token,get_current_user
-from datetime import timedelta
-from app.schemas.auth import Token
+from app.utils.deps import (
+    get_user_repository,
+    get_user_service,
+    get_auth_service,
+    get_user_controller,
+    get_auth_dependency,
+    get_current_user,
+)
 
+from app.controllers.user_controller import UserController
+from app.schemas.user_schemas import UserCreate, UserUpdate, UserRead, UserLogin, Token, TokenData
 
-from fastapi.security import OAuth2PasswordRequestForm
+router = APIRouter(
+    prefix="/api/v1/users",
+    tags=["users"],
+    responses={404: {"description": "Not found"}},
+)
 
-
-
-router = APIRouter(prefix="/api/users", tags=["users"])
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/users/token/login")
 
 @router.get("/me", response_model=UserRead)
-async def read_users_me(
-    current_user: User = Depends(get_current_user)
-    ):
-    return user_to_id_hasheado(current_user)
+def get_current_user_info(
+    controller: UserController = Depends(get_user_controller),
+    current_user: TokenData = Security(get_current_user)
+):
+    """
+    Obtener información del usuario autenticado actual
+    
+    Requiere token JWT válido en el header Authorization.
+    """
+    return controller.get_current_user_info(current_user)
+
 
 @router.post("/", response_model=UserRead, status_code=status.HTTP_201_CREATED)
-def api_create_user(
-    user_in: UserCreate, db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)):
+def create_user(
+    user_data: UserCreate,
+    controller: UserController = Depends(get_user_controller)
+):
+    """
+    Crear un nuevo usuario
+    
+    - **name**: Nombre del usuario (2-100 caracteres)
+    - **lastname**: Apellido del usuario (2-100 caracteres)
+    - **username**: Username único (3-50 caracteres, solo letras, números y _)
+    - **email**: Email válido
+    - **password**: Contraseña (mínimo 8 caracteres, al menos 2 números y 1 carácter especial)
+    """
+    return controller.create_user(user_data)
 
-
-    validate_unique_user(db, user_in.username, user_in.email)
-    user = create_user(db, user_in)
-    return user_to_id_hasheado(user)
 
 @router.get("/", response_model=List[UserRead])
-def api_list_users(
-    skip: int = 0, limit: int = 100, db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)):
-
-    users = get_users(db,skip,limit)
-    return [user_to_id_hasheado(u) for u in users]
+def get_all_users(
+    skip: int = Query(0, ge=0, description="Número de elementos a saltar"),
+    limit: int = Query(100, ge=1, le=1000, description="Número máximo de elementos a retornar"),
+    controller: UserController = Depends(get_user_controller),
+    current_user: TokenData = Security(get_current_user)
+):
+    """
+    Obtener todos los usuarios (paginado)
+    
+    - **skip**: Offset para paginación
+    - **limit**: Límite de elementos por página
+    
+    Requiere autenticación JWT.
+    """
+    return controller.get_all_users(skip=skip, limit=limit)
 
 
 @router.get("/{user_id}", response_model=UserRead)
-def api_get_user(
-    user = Depends(get_existing_user),
-    current_user: User = Depends(get_current_user)):
-
-    return user_to_id_hasheado(user)
-
+def get_user_by_id(
+    user_id: uuid.UUID = Path(..., description="UUID del usuario"),
+    controller: UserController = Depends(get_user_controller),
+    current_user: TokenData = Security(get_current_user)
+):
+    """
+    Obtener usuario por UUID
+    
+    - **user_id**: UUID del usuario
+    
+    Requiere autenticación JWT.
+    """
+    return controller.get_user_by_id(user_id)
 
 
 @router.put("/{user_id}", response_model=UserRead)
-def api_update_user(
-    user_id: str,
-    user_in: UserUpdatePUT,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-    user_db: User = Depends(get_existing_user)
-):    
-
-    user_update = update_user_put(user_db,user_in,db)
-    return user_to_id_hasheado(user_update)
+def update_user(
+    user_id: uuid.UUID = Path(..., description="UUID del usuario"),
+    user_data: UserUpdate = None,
+    controller: UserController = Depends(get_user_controller),
+    current_user: TokenData = Security(get_current_user)
+):
+    """
+    Actualizar completamente un usuario
+    
+    - **user_id**: UUID del usuario
+    - **name**: Nuevo nombre (opcional)
+    - **lastname**: Nuevo apellido (opcional)
+    - **username**: Nuevo username (opcional)
+    - **email**: Nuevo email (opcional)
+    - **password**: Nueva contraseña (opcional)
+    
+    Requiere autenticación JWT.
+    """
+    return controller.update_user(user_id, user_data)
 
 
 @router.patch("/{user_id}", response_model=UserRead)
-def api_update_user(
-    user_id: str,
-    user_in: UserUpdate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-    user_db: User = Depends(get_existing_user)
+def partial_update_user(
+    user_id: uuid.UUID = Path(..., description="UUID del usuario"),
+    user_data: UserUpdate = None,
+    controller: UserController = Depends(get_user_controller),
+    current_user: TokenData = Security(get_current_user)
 ):
+    """
+    Actualizar parcialmente un usuario
     
-    user_update = update_user_patch(user_db,user_in,db)
-    return user_to_id_hasheado(user_update)
+    Solo se actualizarán los campos proporcionados.
+    
+    - **user_id**: UUID del usuario
+    - **name**: Nuevo nombre (opcional)
+    - **lastname**: Nuevo apellido (opcional)
+    - **username**: Nuevo username (opcional)
+    - **email**: Nuevo email (opcional)
+    - **password**: Nueva contraseña (opcional)
+    
+    Requiere autenticación JWT.
+    """
+    return controller.partial_update_user(user_id, user_data)
+
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
-def api_delete_user(user_db = Depends(get_existing_user),  db: Session = Depends(get_db),
-current_user: User = Depends(get_current_user)):
-    delete_user(user_db,db)
+def delete_user(
+    user_id: uuid.UUID = Path(..., description="UUID del usuario"),
+    controller: UserController = Depends(get_user_controller),
+    current_user: TokenData = Security(get_current_user)
+):
+    """
+    Eliminar usuario permanentemente
+    
+    - **user_id**: UUID del usuario a eliminar
+    
+    Requiere autenticación JWT.
+    """
+    controller.delete_user(user_id)
 
 
 @router.post("/token/login", response_model=Token)
-async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(),db: Session = Depends(get_db)): 
-    username = form_data.username
-    password = form_data.password
-    user = authenticate_user(username, password,db)
-    access_token_expires = timedelta(minutes=30)  
-    user_hash = user_to_id_hasheado(user)
-    access_token = create_access_token(subject=user_hash.id, expires_delta=access_token_expires)
-    return {"access_token": access_token, "token_type": "bearer","user":user_hash}
+def login_user(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    controller: UserController = Depends(get_user_controller)
+):
+    """
+    Autenticar usuario y obtener token JWT
+    
+    - **username**: Username o email del usuario
+    - **password**: Contraseña del usuario
+    
+    Retorna un token JWT válido por 30 minutos.
+    Rate limited: máximo 5 intentos por minuto por IP.
+    """
+    login_data = UserLogin(username=form_data.username, password=form_data.password)
 
-
-
-
-## TODO agregar Loguot
+    return controller.login_user(login_data)
